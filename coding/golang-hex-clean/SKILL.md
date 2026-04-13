@@ -3162,10 +3162,11 @@ Use these production-grade packages and runtime techniques when building Go proj
 | GC Tuning | `GOGC` + `GOMEMLIMIT` | Control GC frequency and memory ceiling in containers |
 | Race Detection | `go build -race` | ThreadSanitizer-based race detector for development/CI |
 | UUID | `github.com/google/uuid` | RFC 4122 UUIDs, typed IDs |
-| Redis | `github.com/redis/go-redis/v9` | Type-safe client, pipelining, pub/sub, streams, cluster, OTel integration |
-| Redis Lock | `github.com/bsm/redislock` | Distributed locks on top of go-redis |
-| Redis Cache | `github.com/go-redis/cache/v8` | L1 (TinyLFU) + L2 (Redis) caching layer |
-| Redis Testing | `github.com/alicebob/miniredis/v2` | In-memory Redis for unit tests (no Docker needed) |
+| Redis | `github.com/redis/rueidis` | Auto-pipelining, client-side caching (CSC), 14x throughput vs go-redis, command builder |
+| Redis Lock | `github.com/redis/rueidis/rueidislock` | CSC-backed distributed locks with auto-renewal and instant cancellation |
+| Redis Cache-Aside | `github.com/redis/rueidis/rueidisaside` | Cache-aside pattern with stampede prevention and typed cache |
+| Redis OTel | `github.com/redis/rueidis/rueidisotel` | OTel tracing, command duration, cache hit/miss metrics |
+| Redis Testing | `github.com/redis/rueidis/mock` | gomock-based mock with Match/Result helpers |
 | DB Driver | `github.com/lib/pq` or `github.com/jackc/pgx/v5` | PostgreSQL (pgx is faster, pure Go) |
 | Migrations | `github.com/golang-migrate/migrate/v4` | Version-controlled schema migrations |
 | Testing (containers) | `github.com/testcontainers/testcontainers-go` | Real DB/Redis in integration tests |
@@ -3815,14 +3816,14 @@ All existing code (`json.Marshal`, `json.Unmarshal`, `json.NewEncoder`, `json.Ne
 
 ---
 
-### Redis: go-redis v9
+### Redis: Rueidis
 
-`github.com/redis/go-redis/v9` is the recommended Redis client. Type-safe, context-aware, supports standalone, sentinel, cluster, and ring topologies.
+`github.com/redis/rueidis` is the recommended Redis client. It provides **auto-pipelining** (all concurrent commands batched automatically), **server-assisted client-side caching (CSC)**, and a type-safe **command builder** with IDE auto-completion. ~14x throughput over go-redis in benchmarks.
 
 **Installation:**
 
 ```bash
-go get github.com/redis/go-redis/v9
+go get github.com/redis/rueidis
 ```
 
 #### Client Creation
@@ -3836,43 +3837,35 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/redis/go-redis/v9"
+	"github.com/redis/rueidis"
 
 	"{module}/internal/infrastructure/config"
 )
 
-// NewClient creates a Redis client from config.
-func NewClient(cfg config.RedisConfig) (*redis.Client, error) {
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     cfg.Addr,
-		Password: cfg.Password,
-		DB:       cfg.DB,
-
-		// Connection pool
-		PoolSize:        10, // per CPU by default (10 * GOMAXPROCS)
-		MinIdleConns:    2,
-		ConnMaxIdleTime: 30 * time.Minute,
+// NewClient creates a rueidis client from config.
+func NewClient(cfg config.RedisConfig) (rueidis.Client, error) {
+	client, err := rueidis.NewClient(rueidis.ClientOption{
+		InitAddress: []string{cfg.Addr},
+		Password:    cfg.Password,
+		SelectDB:    cfg.DB,
 
 		// Timeouts
-		DialTimeout:  5 * time.Second,
-		ReadTimeout:  3 * time.Second,
-		WriteTimeout: 3 * time.Second,
-
-		// Retry
-		MaxRetries:      3,
-		MinRetryBackoff: 8 * time.Millisecond,
-		MaxRetryBackoff: 512 * time.Millisecond,
+		Dialer:       net.Dialer{Timeout: 5 * time.Second},
+		ConnWriteTimeout: 3 * time.Second,
 	})
+	if err != nil {
+		return nil, fmt.Errorf("create redis client: %w", err)
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	if err := rdb.Ping(ctx).Err(); err != nil {
-		rdb.Close()
+	if err := client.Do(ctx, client.B().Ping().Build()).Error(); err != nil {
+		client.Close()
 		return nil, fmt.Errorf("ping redis: %w", err)
 	}
 
-	return rdb, nil
+	return client, nil
 }
 ```
 
@@ -3880,37 +3873,108 @@ func NewClient(cfg config.RedisConfig) (*redis.Client, error) {
 
 ```go
 // Standalone (single node)
-rdb := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
+client, _ := rueidis.NewClient(rueidis.ClientOption{
+	InitAddress: []string{"127.0.0.1:6379"},
+})
 
 // From URL
-opt, _ := redis.ParseURL("redis://user:pass@localhost:6379/0?protocol=3")
-rdb := redis.NewClient(opt)
+client, _ := rueidis.NewClient(rueidis.MustParseURL("redis://user:pass@localhost:6379/0"))
 
 // Sentinel (automatic failover)
-rdb := redis.NewFailoverClient(&redis.FailoverOptions{
-	MasterName:    "mymaster",
-	SentinelAddrs: []string{":26379", ":26380", ":26381"},
+client, _ := rueidis.NewClient(rueidis.ClientOption{
+	InitAddress: []string{":26379", ":26380", ":26381"},
+	Sentinel:    rueidis.SentinelOption{MasterSet: "mymaster"},
 })
 
-// Cluster (horizontal scaling)
-rdb := redis.NewClusterClient(&redis.ClusterOptions{
-	Addrs: []string{":7000", ":7001", ":7002"},
+// Cluster (horizontal scaling — auto-detected from InitAddress)
+client, _ := rueidis.NewClient(rueidis.ClientOption{
+	InitAddress: []string{":7000", ":7001", ":7002"},
+	ShuffleInit: true,
 })
 
-// Ring (client-side consistent hashing — cache workloads)
-rdb := redis.NewRing(&redis.RingOptions{
-	Addrs: map[string]string{
-		"shard1": "localhost:6379",
-		"shard2": "localhost:6380",
+// Read from replicas (standalone or cluster)
+client, _ := rueidis.NewClient(rueidis.ClientOption{
+	InitAddress: []string{"127.0.0.1:6379"},
+	SendToReplicas: func(cmd rueidis.Completed) bool {
+		return cmd.IsReadOnly()
 	},
 })
-
-// Universal (auto-picks type based on options)
-rdb := redis.NewUniversalClient(&redis.UniversalOptions{
-	Addrs:      []string{":6379"},         // 1 addr = standalone, 2+ = cluster
-	MasterName: "mymaster",                // if set = sentinel
-})
 ```
+
+#### Command Builder API
+
+`client.B()` provides IDE-autocompleted, type-safe command construction for ALL Redis commands.
+
+```go
+// SET
+client.Do(ctx, client.B().Set().Key("k").Value("v").Ex(time.Hour).Build()).Error()
+
+// SET NX (only if not exists)
+client.Do(ctx, client.B().Set().Key("k").Value("v").Nx().Ex(time.Hour).Build()).Error()
+
+// GET -> string
+val, err := client.Do(ctx, client.B().Get().Key("k").Build()).ToString()
+
+// GET -> int64
+n, err := client.Do(ctx, client.B().Get().Key("k").Build()).AsInt64()
+
+// INCR
+n, err := client.Do(ctx, client.B().Incr().Key("counter").Build()).AsInt64()
+
+// HSET + HGETALL
+client.Do(ctx, client.B().Hset().Key("h").FieldValue().FieldValue("f1", "v1").FieldValue("f2", "v2").Build())
+m, err := client.Do(ctx, client.B().Hgetall().Key("h").Build()).AsStrMap()
+
+// MGET -> array
+arr, err := client.Do(ctx, client.B().Mget().Key("k1", "k2").Build()).ToArray()
+
+// ZADD + ZRANGE with scores
+client.Do(ctx, client.B().Zadd().Key("zs").ScoreMember().ScoreMember(1, "a").ScoreMember(2, "b").Build())
+scores, err := client.Do(ctx, client.B().Zrange().Key("zs").Min("0").Max("-1").Withscores().Build()).AsZScores()
+
+// SCAN
+entry, err := client.Do(ctx, client.B().Scan().Cursor(0).Match("order:*").Count(100).Build()).AsScanEntry()
+
+// Arbitrary commands (not in builder)
+client.Do(ctx, client.B().Arbitrary("CLIENT", "INFO").Build())
+```
+
+**Important**: Built commands are recycled to `sync.Pool` after `Do()`. Do NOT reuse them. Use `.Pin()` if you need to reference a command after `Do()`.
+
+#### Client-Side Caching (CSC)
+
+Rueidis supports **server-assisted client-side caching** (Redis 6+). Use `DoCache()` with a client-side TTL — cached responses are invalidated automatically by Redis server notifications or when the TTL expires.
+
+```go
+// Cached GET — returns from local memory on cache hit
+val, err := client.DoCache(ctx,
+	client.B().Get().Key("order:123").Cache(), // .Cache() marks as cacheable
+	5*time.Minute,                             // client-side TTL
+).ToString()
+
+// Cached HMGET
+arr, err := client.DoCache(ctx,
+	client.B().Hmget().Key("order:123").Field("status", "total").Cache(),
+	time.Minute,
+).ToArray()
+
+// Batch cached reads
+results := client.DoMultiCache(ctx,
+	rueidis.CT(client.B().Get().Key("k1").Cache(), time.Minute),
+	rueidis.CT(client.B().Get().Key("k2").Cache(), 2*time.Minute),
+)
+
+// Inspect cache status
+resp := client.DoCache(ctx, client.B().Get().Key("k").Cache(), time.Minute)
+resp.IsCacheHit() // true if served from local memory
+resp.CacheTTL()   // remaining TTL in seconds
+```
+
+**RULES for CSC:**
+- Use `DoCache()` for read-heavy keys. It's like having a Redis replica inside your process.
+- Redis server pushes invalidations on key mutation — no manual cache busting needed for CSC.
+- Set `DisableCache: true` for providers that don't support RESP3 tracking (e.g., Google Cloud Memorystore).
+- CSC caches `redis.Nil` too — a miss on a non-existent key is cached until the key is created.
 
 #### Cache Repository Implementation
 
@@ -3923,25 +3987,29 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/redis/go-redis/v9"
+	"github.com/redis/rueidis"
 	json "github.com/goccy/go-json"
 
 	"{module}/internal/domain/order"
 )
 
-// RedisOrderCache implements a cache layer for orders.
-type RedisOrderCache struct {
-	rdb *redis.Client
-	ttl time.Duration
+// RueidisOrderCache implements a cache layer for orders using rueidis CSC.
+type RueidisOrderCache struct {
+	client rueidis.Client
+	ttl    time.Duration
 }
 
-func NewRedisOrderCache(rdb *redis.Client, ttl time.Duration) *RedisOrderCache {
-	return &RedisOrderCache{rdb: rdb, ttl: ttl}
+func NewRueidisOrderCache(client rueidis.Client, ttl time.Duration) *RueidisOrderCache {
+	return &RueidisOrderCache{client: client, ttl: ttl}
 }
 
-func (c *RedisOrderCache) Get(ctx context.Context, id order.OrderID) (*order.Order, error) {
-	data, err := c.rdb.Get(ctx, c.key(id)).Bytes()
-	if err == redis.Nil {
+func (c *RueidisOrderCache) Get(ctx context.Context, id order.OrderID) (*order.Order, error) {
+	// DoCache leverages client-side caching — near-zero latency on cache hit
+	data, err := c.client.DoCache(ctx,
+		c.client.B().Get().Key(c.key(id)).Cache(),
+		c.ttl,
+	).ToString()
+	if rueidis.IsRedisNil(err) {
 		return nil, order.ErrNotFound
 	}
 	if err != nil {
@@ -3949,31 +4017,30 @@ func (c *RedisOrderCache) Get(ctx context.Context, id order.OrderID) (*order.Ord
 	}
 
 	var cached cachedOrder
-	if err := json.Unmarshal(data, &cached); err != nil {
+	if err := json.Unmarshal([]byte(data), &cached); err != nil {
 		return nil, fmt.Errorf("unmarshal cached order: %w", err)
 	}
 
 	return cached.toDomain(), nil
 }
 
-func (c *RedisOrderCache) Set(ctx context.Context, o *order.Order) error {
+func (c *RueidisOrderCache) Set(ctx context.Context, o *order.Order) error {
 	cached := fromDomain(o)
 	data, err := json.Marshal(cached)
 	if err != nil {
 		return fmt.Errorf("marshal order: %w", err)
 	}
 
-	if err := c.rdb.Set(ctx, c.key(o.ID()), data, c.ttl).Err(); err != nil {
-		return fmt.Errorf("redis set order: %w", err)
-	}
-	return nil
+	return c.client.Do(ctx,
+		c.client.B().Set().Key(c.key(o.ID())).Value(string(data)).Ex(c.ttl).Build(),
+	).Error()
 }
 
-func (c *RedisOrderCache) Invalidate(ctx context.Context, id order.OrderID) error {
-	return c.rdb.Del(ctx, c.key(id)).Err()
+func (c *RueidisOrderCache) Invalidate(ctx context.Context, id order.OrderID) error {
+	return c.client.Do(ctx, c.client.B().Del().Key(c.key(id)).Build()).Error()
 }
 
-func (c *RedisOrderCache) key(id order.OrderID) string {
+func (c *RueidisOrderCache) key(id order.OrderID) string {
 	return fmt.Sprintf("order:%s", id.String())
 }
 
@@ -3999,72 +4066,79 @@ func fromDomain(o *order.Order) cachedOrder {
 func (c cachedOrder) toDomain() *order.Order {
 	id, _ := order.ParseOrderID(c.ID)
 	customerID, _ := order.ParseCustomerID(c.CustomerID)
-	// Use Reconstitute — no validation, no events
 	return order.Reconstitute(id, customerID, nil, parseStatus(c.Status),
 		order.Money{}, time.Time{}, time.Time{})
 }
 ```
 
-#### Pipelines (Batch Commands)
+#### Auto-Pipelining (Built-In)
 
-Reduce round trips by batching multiple commands in a single request/response cycle.
+All concurrent `Do()` calls from multiple goroutines are **automatically pipelined** into a single write/read cycle. No manual batching needed.
 
 ```go
-// Functional pipeline (preferred)
-var getCmd *redis.StringCmd
-cmds, err := rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
-	getCmd = pipe.Get(ctx, "key1")
-	pipe.Set(ctx, "key2", "value2", time.Hour)
-	pipe.Incr(ctx, "counter")
-	return nil
-})
-// Results available after Exec
-fmt.Println(getCmd.Val())
+// These 3 goroutines' commands are auto-batched into one pipeline round trip:
+var wg sync.WaitGroup
+for i := 0; i < 3; i++ {
+	wg.Add(1)
+	go func(i int) {
+		defer wg.Done()
+		client.Do(ctx, client.B().Set().Key(fmt.Sprintf("k%d", i)).Value("v").Build())
+	}(i)
+}
+wg.Wait()
+```
 
-// Iterate results
-for _, cmd := range cmds {
-	fmt.Println(cmd.(*redis.StringCmd).Val())
+**Manual pipelining** with `DoMulti` for explicit batches:
+
+```go
+results := client.DoMulti(ctx,
+	client.B().Set().Key("k1").Value("v1").Build(),
+	client.B().Set().Key("k2").Value("v2").Build(),
+	client.B().Incr().Key("counter").Build(),
+)
+for _, resp := range results {
+	if err := resp.Error(); err != nil {
+		return fmt.Errorf("pipeline: %w", err)
+	}
 }
 ```
 
-#### Transactions (MULTI/EXEC)
+#### Transactions (WATCH + MULTI/EXEC)
+
+Use `Dedicated()` for CAS (compare-and-swap) transactions:
 
 ```go
-// Atomic transaction
-cmds, err := rdb.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
-	pipe.Set(ctx, "key1", "val1", 0)
-	pipe.Set(ctx, "key2", "val2", 0)
-	pipe.Incr(ctx, "counter")
-	return nil
-})
-```
-
-#### Optimistic Locking (WATCH)
-
-```go
-func incrementKey(ctx context.Context, rdb *redis.Client, key string) error {
-	txf := func(tx *redis.Tx) error {
-		n, err := tx.Get(ctx, key).Int()
-		if err != nil && err != redis.Nil {
-			return err
-		}
-		n++
-		_, err = tx.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
-			pipe.Set(ctx, key, n, 0)
+func incrementKey(ctx context.Context, client rueidis.Client, key string) error {
+	for i := 0; i < 100; i++ {
+		err := client.Dedicated(func(c rueidis.DedicatedClient) error {
+			// WATCH the key
+			if err := c.Do(ctx, c.B().Watch().Key(key).Build()).Error(); err != nil {
+				return err
+			}
+			// Read current value
+			n, err := c.Do(ctx, c.B().Get().Key(key).Build()).AsInt64()
+			if rueidis.IsRedisNil(err) {
+				n = 0
+			} else if err != nil {
+				return err
+			}
+			// MULTI/EXEC with updated value
+			results := c.DoMulti(ctx,
+				c.B().Multi().Build(),
+				c.B().Set().Key(key).Value(strconv.FormatInt(n+1, 10)).Build(),
+				c.B().Exec().Build(),
+			)
+			for _, r := range results {
+				if err := r.Error(); err != nil {
+					return err
+				}
+			}
 			return nil
 		})
-		return err
-	}
-
-	for i := 0; i < 100; i++ {
-		err := rdb.Watch(ctx, txf, key)
 		if err == nil {
 			return nil
 		}
-		if err == redis.TxFailedErr {
-			continue // key changed, retry
-		}
-		return err
+		// Retry on WATCH conflict
 	}
 	return errors.New("max retries exceeded")
 }
@@ -4074,83 +4148,90 @@ func incrementKey(ctx context.Context, rdb *redis.Client, key string) error {
 
 ```go
 // Publisher
-err := rdb.Publish(ctx, "order.events", payload).Err()
+client.Do(ctx, client.B().Publish().Channel("order.events").Message(payload).Build())
 
-// Subscriber
-pubsub := rdb.Subscribe(ctx, "order.events")
-defer pubsub.Close()
-
-// Blocking receive loop
-ch := pubsub.Channel()
-for msg := range ch {
-	fmt.Println(msg.Channel, msg.Payload)
-}
+// Subscriber — blocks until context is cancelled or error
+err := client.Receive(ctx,
+	client.B().Subscribe().Channel("order.events", "order.notifications").Build(),
+	func(msg rueidis.PubSubMessage) {
+		fmt.Println(msg.Channel, msg.Message)
+		// Offload heavy work to a goroutine
+	},
+)
 
 // Pattern subscribe
-pubsub := rdb.PSubscribe(ctx, "order.*")
+err := client.Receive(ctx,
+	client.B().Psubscribe().Pattern("order.*").Build(),
+	func(msg rueidis.PubSubMessage) {
+		fmt.Println(msg.Pattern, msg.Channel, msg.Message)
+	},
+)
 ```
 
 #### Streams (Event Sourcing / Message Queues)
 
 ```go
 // Produce
-id, err := rdb.XAdd(ctx, &redis.XAddArgs{
-	Stream: "order-events",
-	Values: map[string]interface{}{
-		"event":    "order.created",
-		"order_id": orderID,
-		"payload":  string(jsonPayload),
-	},
-}).Result()
+client.Do(ctx, client.B().Xadd().Key("order-events").Id("*").
+	FieldValue().FieldValue("event", "order.created").FieldValue("order_id", orderID).
+	Build())
 
-// Consumer group setup
-rdb.XGroupCreateMkStream(ctx, "order-events", "order-processor", "0")
+// Create consumer group
+client.Do(ctx, client.B().XgroupCreate().Key("order-events").Group("order-processor").Id("0").Mkstream().Build())
 
 // Consume (blocking)
-streams, err := rdb.XReadGroup(ctx, &redis.XReadGroupArgs{
-	Group:    "order-processor",
-	Consumer: "worker-1",
-	Streams:  []string{"order-events", ">"},
-	Count:    10,
-	Block:    5 * time.Second,
-}).Result()
+resp, err := client.Do(ctx, client.B().Xreadgroup().
+	Group("order-processor", "worker-1").
+	Count(10).Block(5000). // block 5s
+	Streams().Key("order-events").Id(">").
+	Build()).AsXRead()
 
-for _, stream := range streams {
-	for _, msg := range stream.Messages {
-		// Process message
-		fmt.Println(msg.ID, msg.Values)
+for stream, msgs := range resp {
+	for _, msg := range msgs {
+		fmt.Println(stream, msg.ID, msg.FieldValues)
 		// Acknowledge
-		rdb.XAck(ctx, "order-events", "order-processor", msg.ID)
+		client.Do(ctx, client.B().Xack().Key("order-events").Group("order-processor").Id(msg.ID).Build())
 	}
 }
 ```
 
-#### Distributed Locks
+#### Distributed Locks (rueidislock)
+
+CSC-backed locks with auto-renewal and **instant cancellation** when lock is lost.
 
 ```go
-import "github.com/bsm/redislock"
+import "github.com/redis/rueidis/rueidislock"
 
-locker := redislock.New(rdb)
-
-lock, err := locker.Obtain(ctx, "order:123:lock", 10*time.Second, nil)
-if err == redislock.ErrNotObtained {
-	return errors.New("could not acquire lock")
-}
+locker, err := rueidislock.NewLocker(rueidislock.LockerOption{
+	ClientOption:   rueidis.ClientOption{InitAddress: []string{"localhost:6379"}},
+	KeyMajority:    1,    // use 1 for single Redis; 2+ for HA
+	NoLoopTracking: true, // better perf on Redis >= 7.0.5
+})
 if err != nil {
-	return fmt.Errorf("obtain lock: %w", err)
+	return fmt.Errorf("create locker: %w", err)
 }
-defer lock.Release(ctx)
+defer locker.Close()
 
-// Extend if work takes longer
-if err := lock.Refresh(ctx, 10*time.Second, nil); err != nil {
-	return fmt.Errorf("extend lock: %w", err)
+// Acquire lock — returned ctx is cancelled automatically when lock is lost
+ctx, cancel, err := locker.WithContext(ctx, "order:123:lock")
+if err != nil {
+	return fmt.Errorf("acquire lock: %w", err)
 }
+defer cancel() // release lock
+
+// Do work while holding lock
+processOrder(ctx, orderID) // ctx is cancelled if lock expires or Redis goes down
 ```
+
+**Key advantages over redislock:**
+- Lock loss cancels `ctx` **immediately** via CSC notifications (no polling).
+- Auto-renewal built-in (extends lock at `KeyValidity/2` intervals).
+- ~1.5x faster in benchmarks (57μs vs 86μs per op).
 
 #### Lua Scripting
 
 ```go
-var deductStock = redis.NewScript(`
+var deductStock = rueidis.NewLuaScript(`
 	local stock = tonumber(redis.call("GET", KEYS[1]))
 	if not stock or stock < tonumber(ARGV[1]) then
 		return 0
@@ -4159,109 +4240,114 @@ var deductStock = redis.NewScript(`
 	return 1
 `)
 
-ok, err := deductStock.Run(ctx, rdb, []string{"stock:product:123"}, 5).Int()
+// Uses EVALSHA (cached), falls back to EVAL on NOSCRIPT
+ok, err := deductStock.Exec(ctx, client, []string{"stock:product:123"}, []string{"5"}).AsInt64()
 if ok == 0 {
 	return errors.New("insufficient stock")
 }
-// Uses EVALSHA (cached), falls back to EVAL automatically
+```
+
+Read-only Lua scripts:
+
+```go
+var readScript = rueidis.NewLuaScriptReadOnly(`return redis.call("GET", KEYS[1])`)
+```
+
+#### Cache-Aside Pattern (rueidisaside)
+
+Built-in stampede-prevention cache-aside with CSC:
+
+```go
+import "github.com/redis/rueidis/rueidisaside"
+
+aside, _ := rueidisaside.NewClient(rueidisaside.ClientOption{
+	ClientOption: rueidis.ClientOption{InitAddress: []string{"localhost:6379"}},
+})
+defer aside.Close()
+
+val, err := aside.Get(ctx, time.Minute, "order:123", func(ctx context.Context, key string) (string, error) {
+	// Called only on cache miss — fetches from DB
+	o, err := repo.FindByID(ctx, orderID)
+	if err != nil {
+		return "", err
+	}
+	data, _ := json.Marshal(fromDomain(o))
+	return string(data), nil
+})
 ```
 
 #### Error Handling
 
 ```go
-val, err := rdb.Get(ctx, "key").Result()
-switch {
-case err == redis.Nil:
+val, err := client.Do(ctx, client.B().Get().Key("key").Build()).ToString()
+if rueidis.IsRedisNil(err) {
 	// Key does not exist — not a failure
 	return "", order.ErrNotFound
-case err != nil:
-	// Actual Redis error
-	return "", fmt.Errorf("redis get: %w", err)
-default:
-	return val, nil
 }
+if err != nil {
+	return "", fmt.Errorf("redis get: %w", err)
+}
+return val, nil
 
-// Typed error checks for cluster/sentinel scenarios
-if redis.IsMovedError(err)  { /* key moved to another shard */ }
-if redis.IsReadOnlyError(err) { /* write to read-only replica */ }
-if redis.IsTryAgainError(err) { /* retry the operation */ }
+// Context deadline
+if err == context.DeadlineExceeded { /* request timed out */ }
+
+// Client closed
+if err == rueidis.ErrClosing { /* client was closed */ }
 ```
 
 #### OpenTelemetry Integration
 
 ```go
-import "github.com/redis/go-redis/extra/redisotel/v9"
+import "github.com/redis/rueidis/rueidisotel"
 
-rdb := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
-
-// Add tracing + metrics instrumentation
-if err := errors.Join(
-	redisotel.InstrumentTracing(rdb),
-	redisotel.InstrumentMetrics(rdb),
-); err != nil {
-	return fmt.Errorf("instrument redis: %w", err)
-}
+// Create an OTel-instrumented client (tracing + metrics built-in)
+client, err := rueidisotel.NewClient(rueidis.ClientOption{
+	InitAddress: []string{"127.0.0.1:6379"},
+})
+defer client.Close()
 ```
 
-Install: `go get github.com/redis/go-redis/extra/redisotel/v9`
+Built-in metrics: `rueidis_dial_attempt`, `rueidis_dial_latency`, `rueidis_do_cache_miss`, `rueidis_do_cache_hits`, `rueidis_command_duration_seconds`, `rueidis_command_errors`.
 
-#### Testing with miniredis
+#### Testing with Mock
 
 ```go
-import "github.com/alicebob/miniredis/v2"
+import (
+	"github.com/redis/rueidis/mock"
+	"go.uber.org/mock/gomock"
+)
 
-func TestOrderCache(t *testing.T) {
-	t.Parallel()
+func TestOrderCache_Get(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-	mr := miniredis.RunT(t) // auto-cleanup on test end
+	client := mock.NewClient(ctrl)
+	cache := persistence.NewRueidisOrderCache(client, 5*time.Minute)
 
-	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
-	cache := persistence.NewRedisOrderCache(rdb, 5*time.Minute)
+	// Mock a cache hit
+	client.EXPECT().
+		DoCache(gomock.Any(), mock.Match("GET", "order:abc"), 5*time.Minute).
+		Return(mock.Result(mock.RedisString(`{"id":"abc","status":"pending"}`)))
 
-	o := newTestOrder(t)
-
-	// Set
-	if err := cache.Set(context.Background(), o); err != nil {
-		t.Fatalf("Set() error: %v", err)
-	}
-
-	// Get
-	got, err := cache.Get(context.Background(), o.ID())
+	got, err := cache.Get(context.Background(), orderID)
 	if err != nil {
 		t.Fatalf("Get() error: %v", err)
 	}
-	if got.ID() != o.ID() {
-		t.Errorf("ID() = %v, want %v", got.ID(), o.ID())
+	if got.Status() != order.StatusPending {
+		t.Errorf("Status() = %v, want %v", got.Status(), order.StatusPending)
 	}
 
-	// TTL expiry
-	mr.FastForward(6 * time.Minute)
-	_, err = cache.Get(context.Background(), o.ID())
+	// Mock a cache miss (redis nil)
+	client.EXPECT().
+		DoCache(gomock.Any(), mock.Match("GET", "order:xyz"), 5*time.Minute).
+		Return(mock.Result(mock.RedisNil()))
+
+	_, err = cache.Get(context.Background(), missingID)
 	if !errors.Is(err, order.ErrNotFound) {
-		t.Errorf("expected ErrNotFound after TTL, got %v", err)
+		t.Errorf("expected ErrNotFound, got %v", err)
 	}
 }
-```
-
-#### Connection Pool Tuning
-
-| Option | Default | Guidance |
-|--------|---------|----------|
-| `PoolSize` | 10 * GOMAXPROCS | Sufficient for most workloads. Increase only if `PoolStats().Timeouts > 0` |
-| `MinIdleConns` | 0 | Set to 2-5 to avoid cold-start latency |
-| `ConnMaxIdleTime` | 30 min | Set below Redis server timeout to avoid stale connections |
-| `ConnMaxLifetime` | 0 (no limit) | Set to ~1h in cloud environments for connection rotation |
-| `PoolFIFO` | false (LIFO) | LIFO is lower overhead; FIFO closes idle connections faster |
-
-Monitor pool health:
-
-```go
-stats := rdb.PoolStats()
-// stats.Hits      — pool hits (connection reused)
-// stats.Misses    — pool misses (new connection created)
-// stats.Timeouts  — waits that timed out (pool exhausted)
-// stats.TotalConns — current total connections
-// stats.IdleConns  — current idle connections
 ```
 
 #### Health Check Integration
@@ -4283,7 +4369,7 @@ func (h *HealthHandler) Readiness(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Redis check
-	if err := h.rdb.Ping(ctx).Err(); err != nil {
+	if err := h.redis.Do(ctx, h.redis.B().Ping().Build()).Error(); err != nil {
 		checks["redis"] = err.Error()
 		status = http.StatusServiceUnavailable
 	} else {
@@ -4297,23 +4383,36 @@ func (h *HealthHandler) Readiness(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
+#### Ecosystem Packages
+
+| Package | Purpose |
+|---------|---------|
+| `rueidis` | Core client with auto-pipelining and CSC |
+| `rueidislock` | Distributed locks with CSC-backed instant cancellation |
+| `rueidisotel` | OpenTelemetry tracing + metrics |
+| `rueidisaside` | Cache-aside pattern with stampede prevention |
+| `rueidislimiter` | Fixed-window rate limiting |
+| `rueidisprob` | Bloom filters (no Redis Stack needed) |
+| `rueidiscompat` | go-redis compatible API adapter (gradual migration) |
+| `rueidishook` | Hook/interceptor interface for all operations |
+| `om` | Object mapping (Hash/JSON repos with optimistic locking) |
+| `mock` | gomock-based testing mock |
+
 **RULES:**
-- Every Redis command takes `context.Context` as first parameter. Always pass request-scoped context.
-- Check for `redis.Nil` explicitly — it means key not found, not a failure.
-- Use pipelines to batch multiple commands and reduce round trips.
-- Use `TxPipelined` for atomic multi-command transactions.
-- Use `Watch` + retry loop for optimistic locking (CAS operations).
-- Close `PubSub` and `Conn` resources promptly (`defer pubsub.Close()`).
-- Use `miniredis` for unit tests (fast, no Docker). Use testcontainers for integration tests.
-- Instrument with `redisotel` for automatic tracing and metrics.
+- Every command uses `client.Do(ctx, client.B().Command().Build())`. Always pass request-scoped context.
+- Check for nil with `rueidis.IsRedisNil(err)` — it means key not found, not a failure.
+- Auto-pipelining is on by default — concurrent `Do()` calls are batched automatically. No manual pipelining needed for throughput.
+- Use `DoCache()` with `.Cache()` builder for read-heavy keys — server pushes invalidations automatically.
+- Use `DoMulti()` for explicit batches when you need to process multiple results together.
+- Use `Dedicated()` for `WATCH`/`MULTI`/`EXEC` CAS transactions. Prefer Lua scripts when possible (better throughput).
+- Do NOT reuse built commands after `Do()` — they are recycled. Use `.Pin()` if needed.
+- Use `rueidislock.WithContext()` for distributed locks — the returned `ctx` is cancelled instantly on lock loss.
+- Use `rueidisaside` for the cache-aside pattern with built-in stampede prevention.
+- Use `rueidisotel.NewClient()` for automatic OTel instrumentation (tracing + metrics).
+- Use `mock.NewClient()` + `mock.Match()` for unit testing. Use testcontainers for integration tests.
 - Use serialization structs (`cachedOrder`) for Redis values — never serialize domain entities directly.
 - `Reconstitute()` to rebuild domain objects from cache — never `New()`.
-- Invalidate cache on writes. Prefer cache-aside pattern: read from cache, miss → read from DB → set cache.
-- Set `ConnMaxIdleTime` below your Redis server's timeout to avoid stale connections.
-- Monitor `PoolStats().Timeouts` — non-zero means pool is undersized or commands are too slow.
-- Use Lua scripts for atomic multi-step operations (e.g., check-and-deduct).
-- Use Redis Streams + consumer groups for durable event-driven workflows.
-- Use distributed locks (`redislock`) for coordination — set TTL to prevent deadlocks.
+- Use `rueidiscompat` as a bridge if migrating from go-redis incrementally.
 
 ---
 
