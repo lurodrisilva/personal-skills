@@ -3294,6 +3294,10 @@ Use these production-grade packages and runtime techniques when building Go proj
 | Testing (mockgen) | `go.uber.org/mock/mockgen` | CLI tool to generate mock implementations from interfaces |
 | Testing (containers) | `github.com/testcontainers/testcontainers-go` | Real DB/Redis in integration tests |
 | DI (large projects) | `github.com/google/wire` | Compile-time dependency injection |
+| Live Reload | `github.com/air-verse/air` | Watches file changes, rebuilds and restarts automatically via `make run/live` |
+| Static Analysis | `honnef.co/go/tools/cmd/staticcheck` | Advanced Go linter, runs in `make audit` |
+| Vuln Scanning | `golang.org/x/vuln/cmd/govulncheck` | Checks dependencies against Go vulnerability database |
+| Dep Upgrades | `github.com/oligot/go-mod-upgrade` | Interactive listing of upgradeable direct dependencies |
 
 ---
 
@@ -5155,6 +5159,161 @@ metrics.Read(samples)
 - Profile allocations with `go tool pprof --allocs` before tuning GC knobs — reducing allocations is always more effective than tuning GOGC.
 - Use `go build -gcflags='-m'` to understand escape analysis and fix unnecessary heap escapes.
 - Monitor GC metrics in production via OTel observable gauges on `runtime.MemStats`.
+
+---
+
+## MAKEFILE
+
+Every project MUST include a root `Makefile` that automates quality control, builds, and development workflows. The Makefile is the single entry point for all repeatable tasks — developers run `make` targets instead of remembering individual Go commands and flags.
+
+Based on [Alex Edwards' Makefile template](https://www.alexedwards.net/blog/a-time-saving-makefile-for-your-go-projects), adapted to this architecture's conventions (95% coverage gate, integration test build tags, architecture tests).
+
+```makefile
+# File: Makefile
+
+# ==================================================================================== #
+# CONFIGURATION
+# ==================================================================================== #
+
+# Change these variables to match your project.
+main_package_path = ./cmd/api
+binary_name = api
+
+# ==================================================================================== #
+# HELPERS
+# ==================================================================================== #
+
+## help: print this help message
+.PHONY: help
+help:
+	@echo 'Usage:'
+	@sed -n 's/^##//p' ${MAKEFILE_LIST} | column -t -s ':' | sed -e 's/^/ /'
+
+.PHONY: confirm
+confirm:
+	@echo -n 'Are you sure? [y/N] ' && read ans && [ $${ans:-N} = y ]
+
+.PHONY: no-dirty
+no-dirty:
+	@test -z "$$(git status --porcelain)"
+
+# ==================================================================================== #
+# QUALITY CONTROL
+# ==================================================================================== #
+
+## tidy: tidy modfiles and format .go files
+.PHONY: tidy
+tidy:
+	go mod tidy -v
+	go fmt ./...
+
+## audit: run quality control checks
+.PHONY: audit
+audit: test
+	go mod tidy -diff
+	go mod verify
+	test -z "$$(gofmt -l .)"
+	go vet ./...
+	go run honnef.co/go/tools/cmd/staticcheck@latest -checks=all,-ST1000,-U1000 ./...
+	go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
+## test: run all unit tests
+.PHONY: test
+test:
+	go test -v -race -buildvcs ./...
+
+## test/cover: run all tests and enforce minimum 95% coverage
+.PHONY: test/cover
+test/cover:
+	go test -v -race -buildvcs -coverprofile=/tmp/coverage.out ./...
+	@total=$$(go tool cover -func=/tmp/coverage.out | grep total | awk '{print $$3}' | tr -d '%'); \
+	if [ $$(echo "$$total < 95.0" | bc) -eq 1 ]; then \
+		echo "FAIL: coverage $$total% is below 95% threshold"; exit 1; \
+	else \
+		echo "OK: coverage $$total%"; \
+	fi
+	go tool cover -html=/tmp/coverage.out
+
+## test/integration: run integration tests (requires Docker for testcontainers)
+.PHONY: test/integration
+test/integration:
+	go test -v -race -buildvcs -tags=integration ./...
+
+## test/arch: run architecture dependency rule tests
+.PHONY: test/arch
+test/arch:
+	go test -v -run TestArch ./internal/infrastructure/archtest/...
+
+## upgradeable: list direct dependencies that have upgrades available
+.PHONY: upgradeable
+upgradeable:
+	@go run github.com/oligot/go-mod-upgrade@latest
+
+# ==================================================================================== #
+# DEVELOPMENT
+# ==================================================================================== #
+
+## build: build the application
+.PHONY: build
+build:
+	go build -o=/tmp/bin/${binary_name} ${main_package_path}
+
+## run: build and run the application
+.PHONY: run
+run: build
+	/tmp/bin/${binary_name}
+
+## run/live: run the application with live reload on file changes
+.PHONY: run/live
+run/live:
+	go run github.com/air-verse/air@latest \
+		--build.cmd "make build" --build.bin "/tmp/bin/${binary_name}" --build.delay "100" \
+		--build.exclude_dir "" \
+		--build.include_ext "go,tpl,tmpl,html,css,js,ts,sql" \
+		--misc.clean_on_exit "true"
+
+# ==================================================================================== #
+# OPERATIONS
+# ==================================================================================== #
+
+## push: push changes to the remote Git repository
+.PHONY: push
+push: confirm audit no-dirty
+	git push
+
+## production/deploy: build for linux/amd64 and deploy
+.PHONY: production/deploy
+production/deploy: confirm audit no-dirty
+	GOOS=linux GOARCH=amd64 go build -ldflags='-s' -o=/tmp/bin/linux_amd64/${binary_name} ${main_package_path}
+	# Add deployment steps here (e.g., Docker build, Kubernetes apply, rsync, etc.)
+```
+
+### Target Reference
+
+| Target | Purpose |
+|--------|---------|
+| `make help` | Print all available targets with descriptions (default target) |
+| `make tidy` | Run `go mod tidy` and `go fmt` to keep modules and formatting clean |
+| `make audit` | Full quality gate: tests → tidy check → verify → fmt check → vet → staticcheck → govulncheck |
+| `make test` | Run all unit tests with race detector enabled |
+| `make test/cover` | Run tests, enforce **95% minimum coverage**, and open HTML report |
+| `make test/integration` | Run integration tests using `-tags=integration` build tag (requires Docker) |
+| `make test/arch` | Run architecture dependency rule enforcement tests |
+| `make upgradeable` | List direct dependencies with available upgrades |
+| `make build` | Compile the binary to `/tmp/bin/{binary_name}` |
+| `make run` | Build and run the application |
+| `make run/live` | Run with [air](https://github.com/air-verse/air) for automatic rebuild on file changes |
+| `make push` | Confirm → audit → verify clean worktree → `git push` |
+| `make production/deploy` | Cross-compile for linux/amd64 and deploy (customize deployment steps) |
+
+### Key Design Decisions
+
+- **`audit` depends on `test`**: Quality checks only run if tests pass first. This is the single target CI pipelines should call.
+- **`confirm` guard**: Destructive targets (`push`, `production/deploy`) require explicit `y` confirmation.
+- **`no-dirty` guard**: Prevents pushing or deploying with uncommitted changes in the worktree.
+- **Coverage enforcement**: `test/cover` fails the build if total coverage drops below 95%, matching this architecture's coverage requirement.
+- **Slash convention**: Related targets use `/` grouping (`test/cover`, `test/integration`, `run/live`) for discoverability via `make help`.
+- **Tool pinning**: Tools like `staticcheck`, `govulncheck`, and `air` are invoked via `go run tool@version` — no global install required.
 
 ---
 
