@@ -5317,6 +5317,149 @@ production/deploy: confirm audit no-dirty
 
 ---
 
+## DOCKERFILE
+
+Every project MUST include a multi-stage `Dockerfile` that produces a minimal, secure production image. The Dockerfile is the single artifact that defines how the application is containerized — it compiles, tests, and packages the binary in isolated stages.
+
+Based on [Docker's official Go guide](https://docs.docker.com/guides/golang/build-images/), adapted to this architecture's conventions (hexagonal layout, `cmd/` entry point, static binary compilation).
+
+### Multi-Stage Dockerfile
+
+```dockerfile
+# File: Dockerfile
+
+# syntax=docker/dockerfile:1
+
+# ------------------------------------------------------------------------------- #
+# Stage 1 — Build
+# ------------------------------------------------------------------------------- #
+FROM golang:1.24 AS build-stage
+
+WORKDIR /app
+
+# Cache dependency downloads in a separate layer.
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the entire source tree — domain, application, adapters, infrastructure, cmd.
+COPY . .
+
+# Compile a fully static Linux binary from the project entry point.
+RUN CGO_ENABLED=0 GOOS=linux go build -o /server ./cmd/api
+
+# ------------------------------------------------------------------------------- #
+# Stage 2 — Test (fails the build if any test fails)
+# ------------------------------------------------------------------------------- #
+FROM build-stage AS test-stage
+RUN go test -v ./...
+
+# ------------------------------------------------------------------------------- #
+# Stage 3 — Release (minimal production image)
+# ------------------------------------------------------------------------------- #
+FROM gcr.io/distroless/base-debian12 AS release-stage
+
+WORKDIR /
+
+# Copy only the compiled binary from the build stage.
+COPY --from=build-stage /server /server
+
+EXPOSE 8080
+
+# Run as non-root for security.
+USER nonroot:nonroot
+
+ENTRYPOINT ["/server"]
+```
+
+### .dockerignore
+
+Always include a `.dockerignore` to keep the build context small and prevent secrets from leaking into images:
+
+```
+# File: .dockerignore
+
+# Version control
+.git
+.gitignore
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# CI / tooling
+.github/
+.omc/
+Makefile
+
+# Build artifacts
+bin/
+coverage.out
+*.test
+
+# Documentation
+*.md
+LICENSE
+```
+
+### Key Conventions
+
+| Convention | Rule |
+|---|---|
+| **Base image** | Use `golang:1.24` (or latest stable) for the build stage; `gcr.io/distroless/base-debian12` for the release stage |
+| **Static binary** | Always compile with `CGO_ENABLED=0 GOOS=linux` — the distroless image has no C library |
+| **Entry point** | Build path matches the project structure: `./cmd/api` (or the relevant `cmd/` sub-directory) |
+| **Dependency caching** | Copy `go.mod` and `go.sum` first, run `go mod download`, then copy source — this leverages Docker layer caching so dependencies are only re-downloaded when module files change |
+| **Test stage** | The test stage inherits from the build stage and runs `go test -v ./...` — if any test fails, `docker build` fails and no image is produced |
+| **Non-root user** | The release stage uses `USER nonroot:nonroot` — never run production containers as root |
+| **EXPOSE** | Document the listening port; it is informational only — runtime port mapping is still required via `-p` |
+| **ENTRYPOINT vs CMD** | Use `ENTRYPOINT` for the binary (the container always runs this); use `CMD` only if default arguments are needed |
+
+### Build & Run Commands
+
+```bash
+# Build the image (test stage runs automatically during build).
+docker build --tag myapp:latest .
+
+# Run the container, mapping host port 8080 to container port 8080.
+docker run -p 8080:8080 myapp:latest
+
+# Run with environment variables (e.g., for config).
+docker run -p 8080:8080 \
+  -e PORT=8080 \
+  -e DATABASE_URL="postgres://user:pass@host:5432/db" \
+  myapp:latest
+
+# Build with a specific tag.
+docker build --tag myapp:v1.0.0 .
+
+# List images to verify size (distroless release should be ~20-30 MB).
+docker image ls myapp
+```
+
+### Integration with Makefile
+
+Add Docker targets to the project Makefile:
+
+```makefile
+# ==================================================================================== #
+# DOCKER
+# ==================================================================================== #
+
+## docker/build: build the Docker image
+.PHONY: docker/build
+docker/build:
+	docker build --tag ${binary_name}:latest .
+
+## docker/run: run the Docker container
+.PHONY: docker/run
+docker/run:
+	docker run -p 8080:8080 ${binary_name}:latest
+```
+
+---
+
 ## QUICK REFERENCE: ADDING A NEW FEATURE (FULL_FEATURE)
 
 When the user says "add feature X", execute this checklist:
