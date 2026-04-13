@@ -218,20 +218,16 @@ tests := []struct {
 for _, tt := range tests {
     t.Run(tt.name, func(t *testing.T) {
         got := Len(tt.give)
-        if got != tt.want {
-            t.Errorf("Len(%q) = %d, want %d", tt.give, got, tt.want)
-        }
+        assert.Equal(t, tt.want, got)
     })
 }
 ```
-- Use `got`/`want` (not `actual`/`expected`). Got before want in output.
-- Use `cmp.Equal` and `cmp.Diff` for comparisons, NOT `reflect.DeepEqual`.
-- Print diff direction: `(-want +got)`.
-- NO assertion libraries. NO test frameworks beyond `testing`.
-- Test helpers call `t.Helper()` and use `t.Fatal` for failures.
-- `t.Error` to keep going, `t.Fatal` when subsequent checks would be meaningless.
-- Never call `t.Fatal` from separate goroutines.
+- Use `testify/assert` for assertions that should continue on failure. Use `testify/require` when subsequent checks would be meaningless (stops the test immediately).
+- Use `go.uber.org/mock/gomock` for generating and using interface mocks. Generate with `mockgen`, set expectations with `EXPECT()`.
+- Test helpers call `t.Helper()` and use `require` for setup failures.
+- Never call `require` from separate goroutines — use `assert` instead.
 - Use `package foo_test` for black-box/integration tests. Use `package foo` when testing unexported internals.
+- **Minimum 95% code coverage.** Run `go test -coverprofile=coverage.out ./...` and verify with `go tool cover -func=coverage.out`.
 
 ### Performance (Hot Paths)
 
@@ -1852,6 +1848,55 @@ func parseLogLevel(s string) slog.Level {
 
 ## TESTING PATTERNS
 
+**Stack:** `testify/assert` + `testify/require` for assertions, `go.uber.org/mock/gomock` for interface mocks.
+**Coverage target: minimum 95%.** Enforce with `go test -coverprofile=coverage.out ./... && go tool cover -func=coverage.out`.
+
+### Mock Generation with mockgen
+
+Generate mocks from port interfaces using `go:generate` directives:
+
+```go
+// File: internal/domain/order/ports.go
+package order
+
+//go:generate mockgen -source=ports.go -destination=mocks/mock_ports.go -package=mocks
+
+type OrderRepository interface {
+	FindByID(ctx context.Context, id OrderID) (*Order, error)
+	Save(ctx context.Context, o *Order) error
+}
+
+type EventPublisher interface {
+	Publish(ctx context.Context, events ...Event) error
+}
+```
+
+Run generation:
+
+```bash
+# Generate all mocks
+go generate ./...
+
+# Or target a specific package
+go generate ./internal/domain/order/...
+```
+
+**mockgen flags:**
+
+| Flag | Purpose |
+|------|---------|
+| `-source` | Input file containing interfaces (source mode) |
+| `-destination` | Output file path |
+| `-package` | Package name for generated mocks |
+| `-mock_names` | Custom mock names (e.g., `Repository=MockOrderRepo`) |
+| `-typed` | Generate type-safe Return, Do, DoAndReturn functions |
+
+**Package mode** (when interfaces span multiple files):
+
+```bash
+mockgen -destination=mocks/mock_repo.go -package=mocks {module}/internal/domain/order OrderRepository,EventPublisher
+```
+
 ### Domain Unit Tests
 
 ```go
@@ -1861,7 +1906,8 @@ package order_test
 import (
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"{module}/internal/domain/order"
 )
@@ -1897,24 +1943,14 @@ func TestNewOrder(t *testing.T) {
 			got, err := order.New(customerID, tt.give)
 
 			if tt.wantErr {
-				if err == nil {
-					t.Fatal("expected error, got nil")
-				}
+				assert.Error(t, err)
 				return
 			}
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
+			require.NoError(t, err)
 
-			if got.ID().IsZero() {
-				t.Error("expected non-zero ID")
-			}
-			if got.Status() != order.StatusPending {
-				t.Errorf("Status() = %v, want %v", got.Status(), order.StatusPending)
-			}
-			if got.Customer() != customerID {
-				t.Errorf("Customer() = %v, want %v", got.Customer(), customerID)
-			}
+			assert.False(t, got.ID().IsZero(), "expected non-zero ID")
+			assert.Equal(t, order.StatusPending, got.Status())
+			assert.Equal(t, customerID, got.Customer())
 		})
 	}
 }
@@ -1924,18 +1960,11 @@ func TestOrderConfirm(t *testing.T) {
 
 	o := newTestOrder(t)
 
-	if err := o.Confirm(); err != nil {
-		t.Fatalf("Confirm() error: %v", err)
-	}
-
-	if got := o.Status(); got != order.StatusConfirmed {
-		t.Errorf("Status() = %v, want %v", got, order.StatusConfirmed)
-	}
+	require.NoError(t, o.Confirm())
+	assert.Equal(t, order.StatusConfirmed, o.Status())
 
 	// Confirm again should fail
-	if err := o.Confirm(); err == nil {
-		t.Error("expected error on double confirm, got nil")
-	}
+	assert.Error(t, o.Confirm(), "expected error on double confirm")
 }
 
 func TestOrderEvents(t *testing.T) {
@@ -1944,17 +1973,11 @@ func TestOrderEvents(t *testing.T) {
 	o := newTestOrder(t)
 	events := o.Events()
 
-	if len(events) != 1 {
-		t.Fatalf("len(Events()) = %d, want 1", len(events))
-	}
-	if events[0].EventName() != "order.created" {
-		t.Errorf("EventName() = %q, want %q", events[0].EventName(), "order.created")
-	}
+	require.Len(t, events, 1)
+	assert.Equal(t, "order.created", events[0].EventName())
 
 	// Events should be drained
-	if got := len(o.Events()); got != 0 {
-		t.Errorf("len(Events()) after drain = %d, want 0", got)
-	}
+	assert.Empty(t, o.Events())
 }
 
 // newTestOrder is a test helper that creates a valid order.
@@ -1963,14 +1986,12 @@ func newTestOrder(t *testing.T) *order.Order {
 	price, _ := order.NewMoney(1000, "USD")
 	item, _ := order.NewLineItem(order.NewProductID(), 1, price)
 	o, err := order.New(order.NewCustomerID(), []order.LineItem{item})
-	if err != nil {
-		t.Fatalf("create test order: %v", err)
-	}
+	require.NoError(t, err, "create test order")
 	return o
 }
 ```
 
-### Application Integration Test
+### Application Unit Tests (gomock)
 
 ```go
 // File: internal/application/orderapp/command_test.go
@@ -1980,20 +2001,35 @@ import (
 	"context"
 	"testing"
 
-	"{module}/internal/adapter/outbound/persistence"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
+
 	"{module}/internal/application/orderapp"
 	"{module}/internal/domain/order"
+	"{module}/internal/domain/order/mocks"
 )
 
-type noopPublisher struct{}
-
-func (p *noopPublisher) Publish(_ context.Context, _ ...order.Event) error { return nil }
-
-func TestCreateOrderHandler(t *testing.T) {
+func TestCreateOrderHandler_Success(t *testing.T) {
 	t.Parallel()
 
-	repo := persistence.NewInMemoryOrderRepo()
-	handler := orderapp.NewCreateOrderHandler(repo, &noopPublisher{})
+	ctrl := gomock.NewController(t)
+	repo := mocks.NewMockOrderRepository(ctrl)
+	publisher := mocks.NewMockEventPublisher(ctrl)
+
+	// Expect Save to be called once with any order
+	repo.EXPECT().
+		Save(gomock.Any(), gomock.Any()).
+		Return(nil).
+		Times(1)
+
+	// Expect events to be published
+	publisher.EXPECT().
+		Publish(gomock.Any(), gomock.Any()).
+		Return(nil).
+		Times(1)
+
+	handler := orderapp.NewCreateOrderHandler(repo, publisher)
 
 	cmd := orderapp.CreateOrderCommand{
 		CustomerID: "550e8400-e29b-41d4-a716-446655440000",
@@ -2008,37 +2044,103 @@ func TestCreateOrderHandler(t *testing.T) {
 	}
 
 	id, err := handler.Handle(context.Background(), cmd)
-	if err != nil {
-		t.Fatalf("Handle() error: %v", err)
-	}
-	if id == "" {
-		t.Error("expected non-empty order ID")
+	require.NoError(t, err)
+	assert.NotEmpty(t, id)
+}
+
+func TestCreateOrderHandler_SaveFails(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	repo := mocks.NewMockOrderRepository(ctrl)
+	publisher := mocks.NewMockEventPublisher(ctrl)
+
+	repo.EXPECT().
+		Save(gomock.Any(), gomock.Any()).
+		Return(errors.New("db connection lost")).
+		Times(1)
+
+	// Publisher should NOT be called when save fails
+	publisher.EXPECT().
+		Publish(gomock.Any(), gomock.Any()).
+		Times(0)
+
+	handler := orderapp.NewCreateOrderHandler(repo, publisher)
+	cmd := orderapp.CreateOrderCommand{
+		CustomerID: "550e8400-e29b-41d4-a716-446655440000",
+		Items: []orderapp.CreateOrderItem{
+			{ProductID: "660e8400-e29b-41d4-a716-446655440000", Quantity: 1, PriceCents: 1000, Currency: "USD"},
+		},
 	}
 
-	// Verify persistence
-	orderID, _ := order.ParseOrderID(id)
-	got, err := repo.FindByID(context.Background(), orderID)
-	if err != nil {
-		t.Fatalf("FindByID() error: %v", err)
-	}
-	if got.Status() != order.StatusPending {
-		t.Errorf("Status() = %v, want %v", got.Status(), order.StatusPending)
-	}
+	_, err := handler.Handle(context.Background(), cmd)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "db connection lost")
 }
+
+func TestCreateOrderHandler_InvalidCommand(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	repo := mocks.NewMockOrderRepository(ctrl)
+	publisher := mocks.NewMockEventPublisher(ctrl)
+
+	// Neither Save nor Publish should be called for invalid input
+	handler := orderapp.NewCreateOrderHandler(repo, publisher)
+
+	cmd := orderapp.CreateOrderCommand{
+		CustomerID: "invalid-uuid",
+		Items:      nil, // empty items
+	}
+
+	_, err := handler.Handle(context.Background(), cmd)
+	assert.Error(t, err)
+}
+```
+
+### gomock Patterns Reference
+
+```go
+// Exact argument matching
+repo.EXPECT().FindByID(gomock.Any(), gomock.Eq(expectedID)).Return(order, nil)
+
+// Any argument
+repo.EXPECT().Save(gomock.Any(), gomock.Any()).Return(nil)
+
+// Call count constraints
+repo.EXPECT().Save(gomock.Any(), gomock.Any()).Return(nil).Times(1)
+repo.EXPECT().FindByID(gomock.Any(), gomock.Any()).Return(order, nil).AnyTimes()
+
+// DoAndReturn for dynamic behavior
+repo.EXPECT().
+	Save(gomock.Any(), gomock.Any()).
+	DoAndReturn(func(ctx context.Context, o *order.Order) error {
+		assert.Equal(t, order.StatusPending, o.Status())
+		return nil
+	})
+
+// Ordered expectations
+gomock.InOrder(
+	repo.EXPECT().Save(gomock.Any(), gomock.Any()).Return(nil),
+	publisher.EXPECT().Publish(gomock.Any(), gomock.Any()).Return(nil),
+)
 ```
 
 ### Testing Rules Summary
 
 | Rule | Detail |
 |------|--------|
-| Domain tests | Pure unit tests. No mocks, no I/O. Test invariants and state transitions. |
-| Application tests | Use in-memory adapters. Test use-case orchestration. |
+| Coverage | **Minimum 95%.** Enforced in CI: `go test -coverprofile=coverage.out ./...` |
+| Assertions | `testify/require` for setup and preconditions (fail-fast). `testify/assert` for verifications (continue on fail). |
+| Mocks | `go.uber.org/mock/gomock` + `mockgen` for port interfaces. Generate with `go:generate`. |
+| Domain tests | Pure unit tests with `assert`/`require`. No mocks, no I/O. Test invariants and state transitions. |
+| Application tests | Use gomock to mock port interfaces. Test use-case orchestration, error paths, and edge cases. |
 | Adapter tests | Integration tests against real infrastructure (testcontainers). |
-| Test helpers | Call `t.Helper()`. Use `t.Fatal` for setup failures. |
+| Test helpers | Call `t.Helper()`. Use `require` for setup failures. |
 | Parallel | Use `t.Parallel()` in all tests and subtests where safe. |
-| Naming | `Test{Type}{Method}` or `Test{Type}_{Scenario}` |
-| Package | `package foo_test` for public API tests. `package foo` for internals. |
-| Comparison | `cmp.Diff` for structs. `errors.Is` for sentinel errors. |
+| Naming | `Test{Type}_{Scenario}` (e.g., `TestCreateOrderHandler_SaveFails`) |
+| Package | `package foo_test` for public API tests. `package foo` when testing unexported internals. |
+| Mock location | `internal/domain/{aggregate}/mocks/` for port mocks. Add `mocks/` to `.gitignore` if generated in CI. |
 
 ---
 
@@ -2061,8 +2163,8 @@ Before finishing any implementation, verify NONE of these exist:
 | `init()` with side effects | Hidden, ordering-dependent, hard to test | Explicit initialization in constructors |
 | Mutable package-level variables | Global state — race conditions, testing nightmares | Inject dependencies |
 | `snake_case` names | Not Go style | Use `MixedCaps` / `mixedCaps` |
-| `reflect.DeepEqual` in tests | Panics on cycles, no diff output | Use `cmp.Equal` / `cmp.Diff` |
-| Assertion library in tests | Not idiomatic Go | Use `if got != want { t.Errorf(...) }` |
+| `reflect.DeepEqual` in tests | Panics on cycles, no diff output | Use `assert.Equal` / `require.Equal` from testify |
+| Raw `if/t.Errorf` in tests | Verbose, inconsistent assertion style | Use `testify/assert` and `testify/require` |
 | HTTP handler calls DB directly | Skips application layer | Handler → Command/Query → Repository |
 | Business logic in HTTP handler | Leaks domain rules into adapter | Move to domain entity or application handler |
 | SQL with string concatenation | SQL injection vulnerability | Use parameterized queries (`$1`, `$2`) |
@@ -2658,29 +2760,40 @@ type RealUUIDProvider struct{}
 func (RealUUIDProvider) New() uuid.UUID { return uuid.New() }
 ```
 
-```go
-// File: internal/domain/shared/provider_mock.go
-package shared
+Generate mocks with `mockgen`:
 
+```go
+// File: internal/domain/shared/provider.go (add go:generate directive)
+//go:generate mockgen -source=provider.go -destination=mocks/mock_provider.go -package=mocks
+```
+
+Use in tests:
+
+```go
 import (
+	"testing"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
+
+	"{module}/internal/domain/shared/mocks"
 )
 
-// FixedTimeProvider returns a fixed time for testing.
-type FixedTimeProvider struct {
-	Time time.Time
+func TestSomethingWithTime(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	tp := mocks.NewMockTimeProvider(ctrl)
+	up := mocks.NewMockUUIDProvider(ctrl)
+
+	fixedTime := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	fixedID := uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
+
+	tp.EXPECT().Now().Return(fixedTime).AnyTimes()
+	up.EXPECT().New().Return(fixedID).AnyTimes()
+
+	// Use tp and up in your test subject...
 }
-
-func (p FixedTimeProvider) Now() time.Time { return p.Time }
-
-// FixedUUIDProvider returns a predetermined UUID for testing.
-type FixedUUIDProvider struct {
-	ID uuid.UUID
-}
-
-func (p FixedUUIDProvider) New() uuid.UUID { return p.ID }
 ```
 
 Inject providers into entities/services that need them:
@@ -2694,7 +2807,8 @@ func New(customer CustomerID, items []LineItem, tp shared.TimeProvider, up share
 
 **RULES:**
 - Define provider interfaces in `domain/shared/`.
-- Real implementations for production, fixed implementations for tests.
+- Real implementations for production, gomock mocks for tests.
+- Generate mocks with `mockgen` — never hand-write mock implementations.
 - Only abstract what you actually need to control in tests (time, UUIDs, random). Don't over-abstract.
 - Alternative: accept `func() time.Time` closures for simpler cases.
 
@@ -3162,12 +3276,15 @@ Use these production-grade packages and runtime techniques when building Go proj
 | GC Tuning | `GOGC` + `GOMEMLIMIT` | Control GC frequency and memory ceiling in containers |
 | Race Detection | `go build -race` | ThreadSanitizer-based race detector for development/CI |
 | UUID | `github.com/google/uuid` | RFC 4122 UUIDs, typed IDs |
-| Redis | `github.com/redis/go-redis/v9` | Type-safe client, pipelining, pub/sub, streams, cluster, OTel integration |
-| Redis Lock | `github.com/bsm/redislock` | Distributed locks on top of go-redis |
-| Redis Cache | `github.com/go-redis/cache/v8` | L1 (TinyLFU) + L2 (Redis) caching layer |
-| Redis Testing | `github.com/alicebob/miniredis/v2` | In-memory Redis for unit tests (no Docker needed) |
+| Redis | `github.com/redis/rueidis` | High-perf client, auto pipelining, client-side caching, cluster/sentinel |
+| Redis Lock | `github.com/redis/rueidis/rueidislock` | Distributed locks built on rueidis |
+| Redis OTel | `github.com/redis/rueidis/rueidisotel` | OpenTelemetry tracing + metrics for rueidis |
+| Redis Mock | `github.com/redis/rueidis/mock` | Mock client for unit tests (no Docker needed) |
 | DB Driver | `github.com/lib/pq` or `github.com/jackc/pgx/v5` | PostgreSQL (pgx is faster, pure Go) |
 | Migrations | `github.com/golang-migrate/migrate/v4` | Version-controlled schema migrations |
+| Testing (assertions) | `github.com/stretchr/testify` | assert (continue on fail), require (stop on fail), suite |
+| Testing (mocks) | `go.uber.org/mock/gomock` | Interface mock generation + expectation-based verification |
+| Testing (mockgen) | `go.uber.org/mock/mockgen` | CLI tool to generate mock implementations from interfaces |
 | Testing (containers) | `github.com/testcontainers/testcontainers-go` | Real DB/Redis in integration tests |
 | DI (large projects) | `github.com/google/wire` | Compile-time dependency injection |
 
@@ -3815,14 +3932,14 @@ All existing code (`json.Marshal`, `json.Unmarshal`, `json.NewEncoder`, `json.Ne
 
 ---
 
-### Redis: go-redis v9
+### Redis: rueidis
 
-`github.com/redis/go-redis/v9` is the recommended Redis client. Type-safe, context-aware, supports standalone, sentinel, cluster, and ring topologies.
+`github.com/redis/rueidis` is the recommended Redis client. High-performance with auto pipelining, server-assisted client-side caching, and support for standalone, sentinel, and cluster topologies.
 
 **Installation:**
 
 ```bash
-go get github.com/redis/go-redis/v9
+go get github.com/redis/rueidis
 ```
 
 #### Client Creation
@@ -3836,43 +3953,36 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/redis/go-redis/v9"
+	"github.com/redis/rueidis"
 
 	"{module}/internal/infrastructure/config"
 )
 
-// NewClient creates a Redis client from config.
-func NewClient(cfg config.RedisConfig) (*redis.Client, error) {
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     cfg.Addr,
-		Password: cfg.Password,
-		DB:       cfg.DB,
-
-		// Connection pool
-		PoolSize:        10, // per CPU by default (10 * GOMAXPROCS)
-		MinIdleConns:    2,
-		ConnMaxIdleTime: 30 * time.Minute,
+// NewClient creates a rueidis client from config.
+func NewClient(cfg config.RedisConfig) (rueidis.Client, error) {
+	client, err := rueidis.NewClient(rueidis.ClientOption{
+		InitAddress: []string{cfg.Addr},
+		Password:    cfg.Password,
+		SelectDB:    cfg.DB,
 
 		// Timeouts
-		DialTimeout:  5 * time.Second,
-		ReadTimeout:  3 * time.Second,
-		WriteTimeout: 3 * time.Second,
-
-		// Retry
-		MaxRetries:      3,
-		MinRetryBackoff: 8 * time.Millisecond,
-		MaxRetryBackoff: 512 * time.Millisecond,
+		Dialer:       net.Dialer{Timeout: 5 * time.Second},
+		ConnWriteTimeout: 3 * time.Second,
 	})
+	if err != nil {
+		return nil, fmt.Errorf("create redis client: %w", err)
+	}
 
+	// Health check
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	if err := rdb.Ping(ctx).Err(); err != nil {
-		rdb.Close()
+	if err := client.Do(ctx, client.B().Ping().Build()).Error(); err != nil {
+		client.Close()
 		return nil, fmt.Errorf("ping redis: %w", err)
 	}
 
-	return rdb, nil
+	return client, nil
 }
 ```
 
@@ -3880,36 +3990,56 @@ func NewClient(cfg config.RedisConfig) (*redis.Client, error) {
 
 ```go
 // Standalone (single node)
-rdb := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
-
-// From URL
-opt, _ := redis.ParseURL("redis://user:pass@localhost:6379/0?protocol=3")
-rdb := redis.NewClient(opt)
+client, err := rueidis.NewClient(rueidis.ClientOption{
+	InitAddress: []string{"127.0.0.1:6379"},
+})
 
 // Sentinel (automatic failover)
-rdb := redis.NewFailoverClient(&redis.FailoverOptions{
-	MasterName:    "mymaster",
-	SentinelAddrs: []string{":26379", ":26380", ":26381"},
-})
-
-// Cluster (horizontal scaling)
-rdb := redis.NewClusterClient(&redis.ClusterOptions{
-	Addrs: []string{":7000", ":7001", ":7002"},
-})
-
-// Ring (client-side consistent hashing — cache workloads)
-rdb := redis.NewRing(&redis.RingOptions{
-	Addrs: map[string]string{
-		"shard1": "localhost:6379",
-		"shard2": "localhost:6380",
+client, err := rueidis.NewClient(rueidis.ClientOption{
+	InitAddress: []string{":26379", ":26380", ":26381"},
+	Sentinel: rueidis.SentinelOption{
+		MasterSet: "mymaster",
 	},
 })
 
-// Universal (auto-picks type based on options)
-rdb := redis.NewUniversalClient(&redis.UniversalOptions{
-	Addrs:      []string{":6379"},         // 1 addr = standalone, 2+ = cluster
-	MasterName: "mymaster",                // if set = sentinel
+// Cluster (horizontal scaling — auto-detected from InitAddress)
+client, err := rueidis.NewClient(rueidis.ClientOption{
+	InitAddress: []string{":7000", ":7001", ":7002"},
 })
+```
+
+#### Command Builder
+
+All commands use the type-safe builder pattern via `client.B()`. IDE autocomplete guides you through every Redis command.
+
+```go
+ctx := context.Background()
+
+// SET with NX option
+err := client.Do(ctx, client.B().Set().Key("key").Value("val").Nx().Build()).Error()
+
+// GET
+val, err := client.Do(ctx, client.B().Get().Key("key").Build()).ToString()
+
+// HGETALL
+hm, err := client.Do(ctx, client.B().Hgetall().Key("myhash").Build()).AsStrMap()
+
+// HMGET
+arr, err := client.Do(ctx, client.B().Hmget().Key("myhash").Field("f1", "f2").Build()).ToArray()
+
+// DEL
+err = client.Do(ctx, client.B().Del().Key("key1", "key2").Build()).Error()
+
+// EXPIRE
+err = client.Do(ctx, client.B().Expire().Key("key").Seconds(300).Build()).Error()
+```
+
+**Pin commands for reuse** (avoids allocations in hot paths):
+
+```go
+cmd := client.B().Get().Key("hot-key").Build().Pin()
+// Safe to reuse cmd across goroutines
+val, err := client.Do(ctx, cmd).ToString()
 ```
 
 #### Cache Repository Implementation
@@ -3923,31 +4053,31 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/redis/go-redis/v9"
+	"github.com/redis/rueidis"
 	json "github.com/goccy/go-json"
 
 	"{module}/internal/domain/order"
 )
 
-// RedisOrderCache implements a cache layer for orders.
+// RedisOrderCache implements a cache layer for orders using rueidis.
 type RedisOrderCache struct {
-	rdb *redis.Client
-	ttl time.Duration
+	client rueidis.Client
+	ttl    time.Duration
 }
 
-func NewRedisOrderCache(rdb *redis.Client, ttl time.Duration) *RedisOrderCache {
-	return &RedisOrderCache{rdb: rdb, ttl: ttl}
+func NewRedisOrderCache(client rueidis.Client, ttl time.Duration) *RedisOrderCache {
+	return &RedisOrderCache{client: client, ttl: ttl}
 }
 
 func (c *RedisOrderCache) Get(ctx context.Context, id order.OrderID) (*order.Order, error) {
-	data, err := c.rdb.Get(ctx, c.key(id)).Bytes()
-	if err == redis.Nil {
+	resp := c.client.Do(ctx, c.client.B().Get().Key(c.key(id)).Build())
+	if err := resp.Error(); rueidis.IsRedisNil(err) {
 		return nil, order.ErrNotFound
-	}
-	if err != nil {
+	} else if err != nil {
 		return nil, fmt.Errorf("redis get order: %w", err)
 	}
 
+	data, _ := resp.AsBytes()
 	var cached cachedOrder
 	if err := json.Unmarshal(data, &cached); err != nil {
 		return nil, fmt.Errorf("unmarshal cached order: %w", err)
@@ -3963,14 +4093,15 @@ func (c *RedisOrderCache) Set(ctx context.Context, o *order.Order) error {
 		return fmt.Errorf("marshal order: %w", err)
 	}
 
-	if err := c.rdb.Set(ctx, c.key(o.ID()), data, c.ttl).Err(); err != nil {
+	cmd := c.client.B().Set().Key(c.key(o.ID())).Value(string(data)).Ex(c.ttl).Build()
+	if err := c.client.Do(ctx, cmd).Error(); err != nil {
 		return fmt.Errorf("redis set order: %w", err)
 	}
 	return nil
 }
 
 func (c *RedisOrderCache) Invalidate(ctx context.Context, id order.OrderID) error {
-	return c.rdb.Del(ctx, c.key(id)).Err()
+	return c.client.Do(ctx, c.client.B().Del().Key(c.key(id)).Build()).Error()
 }
 
 func (c *RedisOrderCache) key(id order.OrderID) string {
@@ -3999,128 +4130,150 @@ func fromDomain(o *order.Order) cachedOrder {
 func (c cachedOrder) toDomain() *order.Order {
 	id, _ := order.ParseOrderID(c.ID)
 	customerID, _ := order.ParseCustomerID(c.CustomerID)
-	// Use Reconstitute — no validation, no events
 	return order.Reconstitute(id, customerID, nil, parseStatus(c.Status),
 		order.Money{}, time.Time{}, time.Time{})
 }
 ```
 
-#### Pipelines (Batch Commands)
+#### Auto Pipelining
 
-Reduce round trips by batching multiple commands in a single request/response cycle.
+All concurrent non-blocking `Do()` calls are **automatically pipelined** — no explicit batching required. This gives ~14x throughput improvement over traditional clients.
 
 ```go
-// Functional pipeline (preferred)
-var getCmd *redis.StringCmd
-cmds, err := rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
-	getCmd = pipe.Get(ctx, "key1")
-	pipe.Set(ctx, "key2", "value2", time.Hour)
-	pipe.Incr(ctx, "counter")
-	return nil
-})
-// Results available after Exec
-fmt.Println(getCmd.Val())
-
-// Iterate results
-for _, cmd := range cmds {
-	fmt.Println(cmd.(*redis.StringCmd).Val())
+// Concurrent goroutines automatically pipeline
+func BenchmarkAutoPipeline(b *testing.B, client rueidis.Client) {
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			client.Do(context.Background(), client.B().Get().Key("k").Build()).ToString()
+		}
+	})
 }
 ```
 
-#### Transactions (MULTI/EXEC)
+**Disable auto pipelining** (opt-in per command):
 
 ```go
-// Atomic transaction
-cmds, err := rdb.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
-	pipe.Set(ctx, "key1", "val1", 0)
-	pipe.Set(ctx, "key2", "val2", 0)
-	pipe.Incr(ctx, "counter")
-	return nil
+client, err := rueidis.NewClient(rueidis.ClientOption{
+	InitAddress:          []string{"127.0.0.1:6379"},
+	DisableAutoPipelining: true,
+})
+
+// Opt-in specific commands to pipelining
+cmd := client.B().Get().Key("key").Build().ToPipe()
+client.Do(ctx, cmd)
+```
+
+#### Manual Pipelining with DoMulti
+
+Batch multiple commands explicitly when you need all results together.
+
+```go
+cmds := make(rueidis.Commands, 0, 10)
+for i := 0; i < 10; i++ {
+	cmds = append(cmds, client.B().Set().Key("key").Value("value").Build())
+}
+
+for _, resp := range client.DoMulti(ctx, cmds...) {
+	if err := resp.Error(); err != nil {
+		panic(err)
+	}
+}
+```
+
+#### Server-Assisted Client-Side Caching
+
+Use `DoCache()` with a client-side TTL. Redis server invalidates cached entries automatically when data changes.
+
+```go
+// Single cached command
+val, err := client.DoCache(ctx,
+	client.B().Get().Key("config:feature-flags").Cache(),
+	time.Minute,
+).ToString()
+
+// Multi-key cached commands
+results := client.DoMultiCache(ctx,
+	rueidis.CT(client.B().Get().Key("k1").Cache(), 1*time.Minute),
+	rueidis.CT(client.B().Get().Key("k2").Cache(), 2*time.Minute),
+)
+
+// Check cache hit
+resp := client.DoCache(ctx, client.B().Get().Key("k1").Cache(), time.Minute)
+resp.IsCacheHit()  // true if served from local cache
+resp.CacheTTL()    // remaining seconds
+```
+
+**Broadcast mode** (prefix-based caching):
+
+```go
+client, err := rueidis.NewClient(rueidis.ClientOption{
+	InitAddress: []string{"127.0.0.1:6379"},
+	ClientTrackingOptions: []string{
+		"PREFIX", "config:", "PREFIX", "session:", "BCAST",
+	},
 })
 ```
 
-#### Optimistic Locking (WATCH)
+**Disable caching** (for providers without tracking support):
 
 ```go
-func incrementKey(ctx context.Context, rdb *redis.Client, key string) error {
-	txf := func(tx *redis.Tx) error {
-		n, err := tx.Get(ctx, key).Int()
-		if err != nil && err != redis.Nil {
-			return err
-		}
-		n++
-		_, err = tx.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
-			pipe.Set(ctx, key, n, 0)
-			return nil
-		})
-		return err
-	}
-
-	for i := 0; i < 100; i++ {
-		err := rdb.Watch(ctx, txf, key)
-		if err == nil {
-			return nil
-		}
-		if err == redis.TxFailedErr {
-			continue // key changed, retry
-		}
-		return err
-	}
-	return errors.New("max retries exceeded")
-}
+client, err := rueidis.NewClient(rueidis.ClientOption{
+	InitAddress:  []string{"127.0.0.1:6379"},
+	DisableCache: true, // DoCache falls back to Do
+})
 ```
 
 #### Pub/Sub
 
 ```go
 // Publisher
-err := rdb.Publish(ctx, "order.events", payload).Err()
+err := client.Do(ctx, client.B().Publish().Channel("order.events").Message(payload).Build()).Error()
 
-// Subscriber
-pubsub := rdb.Subscribe(ctx, "order.events")
-defer pubsub.Close()
-
-// Blocking receive loop
-ch := pubsub.Channel()
-for msg := range ch {
-	fmt.Println(msg.Channel, msg.Payload)
-}
+// Subscriber — blocking receive with callback
+err = client.Receive(ctx,
+	client.B().Subscribe().Channel("order.events", "order.updates").Build(),
+	func(msg rueidis.PubSubMessage) {
+		fmt.Println(msg.Channel, msg.Message)
+		// For heavy processing, spawn a goroutine
+	},
+)
 
 // Pattern subscribe
-pubsub := rdb.PSubscribe(ctx, "order.*")
+err = client.Receive(ctx,
+	client.B().Psubscribe().Pattern("order.*").Build(),
+	func(msg rueidis.PubSubMessage) {
+		fmt.Println(msg.Pattern, msg.Channel, msg.Message)
+	},
+)
 ```
 
 #### Streams (Event Sourcing / Message Queues)
 
 ```go
 // Produce
-id, err := rdb.XAdd(ctx, &redis.XAddArgs{
-	Stream: "order-events",
-	Values: map[string]interface{}{
-		"event":    "order.created",
-		"order_id": orderID,
-		"payload":  string(jsonPayload),
-	},
-}).Result()
+id, err := client.Do(ctx, client.B().Xadd().Key("order-events").Id("*").
+	FieldValue().FieldValue("event", "order.created").
+	FieldValue("order_id", orderID).
+	FieldValue("payload", string(jsonPayload)).
+	Build()).ToString()
 
 // Consumer group setup
-rdb.XGroupCreateMkStream(ctx, "order-events", "order-processor", "0")
+client.Do(ctx, client.B().XgroupCreate().Key("order-events").
+	Group("order-processor").Id("0").Mkstream().Build())
 
 // Consume (blocking)
-streams, err := rdb.XReadGroup(ctx, &redis.XReadGroupArgs{
-	Group:    "order-processor",
-	Consumer: "worker-1",
-	Streams:  []string{"order-events", ">"},
-	Count:    10,
-	Block:    5 * time.Second,
-}).Result()
+resp, err := client.Do(ctx, client.B().Xreadgroup().
+	Group("order-processor").Consumer("worker-1").
+	Count(10).Block(5000). // block 5 seconds (milliseconds)
+	Streams().Key("order-events").Id(">").
+	Build()).AsXRead()
 
-for _, stream := range streams {
-	for _, msg := range stream.Messages {
-		// Process message
-		fmt.Println(msg.ID, msg.Values)
+for stream, messages := range resp {
+	for _, msg := range messages {
+		fmt.Println(stream, msg.ID, msg.FieldValues)
 		// Acknowledge
-		rdb.XAck(ctx, "order-events", "order-processor", msg.ID)
+		client.Do(ctx, client.B().Xack().Key("order-events").
+			Group("order-processor").Id(msg.ID).Build())
 	}
 }
 ```
@@ -4128,29 +4281,32 @@ for _, stream := range streams {
 #### Distributed Locks
 
 ```go
-import "github.com/bsm/redislock"
+import "github.com/redis/rueidis/rueidislock"
 
-locker := redislock.New(rdb)
-
-lock, err := locker.Obtain(ctx, "order:123:lock", 10*time.Second, nil)
-if err == redislock.ErrNotObtained {
-	return errors.New("could not acquire lock")
-}
+locker, err := rueidislock.NewLocker(rueidislock.LockerOption{
+	ClientOption: rueidis.ClientOption{InitAddress: []string{"127.0.0.1:6379"}},
+	KeyMajority:  1, // single-node majority
+})
 if err != nil {
-	return fmt.Errorf("obtain lock: %w", err)
+	return fmt.Errorf("create locker: %w", err)
 }
-defer lock.Release(ctx)
+defer locker.Close()
 
-// Extend if work takes longer
-if err := lock.Refresh(ctx, 10*time.Second, nil); err != nil {
-	return fmt.Errorf("extend lock: %w", err)
+// Acquire lock — ctx is released when lock is held
+lockCtx, cancel, err := locker.WithContext(ctx, "order:123:lock")
+if err != nil {
+	return fmt.Errorf("acquire lock: %w", err)
 }
+defer cancel()
+
+// Use lockCtx for work — if lock is lost, lockCtx is cancelled
+doWork(lockCtx)
 ```
 
 #### Lua Scripting
 
 ```go
-var deductStock = redis.NewScript(`
+var deductStock = rueidis.NewLuaScript(`
 	local stock = tonumber(redis.call("GET", KEYS[1]))
 	if not stock or stock < tonumber(ARGV[1]) then
 		return 0
@@ -4159,7 +4315,8 @@ var deductStock = redis.NewScript(`
 	return 1
 `)
 
-ok, err := deductStock.Run(ctx, rdb, []string{"stock:product:123"}, 5).Int()
+resp := deductStock.Exec(ctx, client, []string{"stock:product:123"}, []string{"5"})
+ok, err := resp.AsInt64()
 if ok == 0 {
 	return errors.New("insufficient stock")
 }
@@ -4169,99 +4326,107 @@ if ok == 0 {
 #### Error Handling
 
 ```go
-val, err := rdb.Get(ctx, "key").Result()
-switch {
-case err == redis.Nil:
+resp := client.Do(ctx, client.B().Get().Key("key").Build())
+if err := resp.Error(); rueidis.IsRedisNil(err) {
 	// Key does not exist — not a failure
 	return "", order.ErrNotFound
-case err != nil:
+} else if err != nil {
 	// Actual Redis error
 	return "", fmt.Errorf("redis get: %w", err)
-default:
-	return val, nil
 }
 
-// Typed error checks for cluster/sentinel scenarios
-if redis.IsMovedError(err)  { /* key moved to another shard */ }
-if redis.IsReadOnlyError(err) { /* write to read-only replica */ }
-if redis.IsTryAgainError(err) { /* retry the operation */ }
+val, _ := resp.ToString()
+return val, nil
+```
+
+**Context deadline handling:**
+
+```go
+ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+defer cancel()
+
+// Returns early with context.DeadlineExceeded if deadline is reached
+err := client.Do(ctx, client.B().Set().Key("key").Value("val").Build()).Error()
+```
+
+**Retry configuration:**
+
+```go
+client, err := rueidis.NewClient(rueidis.ClientOption{
+	InitAddress:  []string{"127.0.0.1:6379"},
+	DisableRetry: false,     // read-only commands auto-retry (default)
+	RetryDelay:   myDelayFn, // custom retry delay function
+})
+
+// Mark write commands as retryable (for idempotent operations only)
+client.Do(ctx, client.B().Set().Key("k").Value("v").Build().ToRetryable())
 ```
 
 #### OpenTelemetry Integration
 
 ```go
-import "github.com/redis/go-redis/extra/redisotel/v9"
+import "github.com/redis/rueidis/rueidisotel"
 
-rdb := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
+// Create instrumented client directly
+client, err := rueidisotel.NewClient(rueidis.ClientOption{
+	InitAddress: []string{"127.0.0.1:6379"},
+})
 
-// Add tracing + metrics instrumentation
-if err := errors.Join(
-	redisotel.InstrumentTracing(rdb),
-	redisotel.InstrumentMetrics(rdb),
-); err != nil {
-	return fmt.Errorf("instrument redis: %w", err)
-}
+// Automatically instruments:
+// - Tracing spans for every command
+// - Metrics: rueidis_do_cache_miss, rueidis_do_cache_hits
 ```
 
-Install: `go get github.com/redis/go-redis/extra/redisotel/v9`
+Install: `go get github.com/redis/rueidis/rueidisotel`
 
-#### Testing with miniredis
+#### Testing with rueidis mock
 
 ```go
-import "github.com/alicebob/miniredis/v2"
+import (
+	"testing"
 
-func TestOrderCache(t *testing.T) {
+	"github.com/redis/rueidis/mock"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
+)
+
+func TestOrderCache_Get(t *testing.T) {
 	t.Parallel()
 
-	mr := miniredis.RunT(t) // auto-cleanup on test end
+	ctrl := gomock.NewController(t)
+	client := mock.NewClient(ctrl)
 
-	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
-	cache := persistence.NewRedisOrderCache(rdb, 5*time.Minute)
+	cache := persistence.NewRedisOrderCache(client, 5*time.Minute)
 
-	o := newTestOrder(t)
+	// Mock a successful GET response
+	client.EXPECT().
+		B().Return(mock.NewCommandBuilder())
+	client.EXPECT().
+		Do(gomock.Any(), gomock.Any()).
+		Return(mock.Result(mock.RedisString(`{"id":"abc","customer_id":"cust1","status":"pending","total_cents":1000,"currency":"USD"}`)))
 
-	// Set
-	if err := cache.Set(context.Background(), o); err != nil {
-		t.Fatalf("Set() error: %v", err)
-	}
-
-	// Get
-	got, err := cache.Get(context.Background(), o.ID())
-	if err != nil {
-		t.Fatalf("Get() error: %v", err)
-	}
-	if got.ID() != o.ID() {
-		t.Errorf("ID() = %v, want %v", got.ID(), o.ID())
-	}
-
-	// TTL expiry
-	mr.FastForward(6 * time.Minute)
-	_, err = cache.Get(context.Background(), o.ID())
-	if !errors.Is(err, order.ErrNotFound) {
-		t.Errorf("expected ErrNotFound after TTL, got %v", err)
-	}
+	got, err := cache.Get(context.Background(), testOrderID)
+	require.NoError(t, err)
+	assert.Equal(t, testOrderID, got.ID())
 }
-```
 
-#### Connection Pool Tuning
+func TestOrderCache_Get_NotFound(t *testing.T) {
+	t.Parallel()
 
-| Option | Default | Guidance |
-|--------|---------|----------|
-| `PoolSize` | 10 * GOMAXPROCS | Sufficient for most workloads. Increase only if `PoolStats().Timeouts > 0` |
-| `MinIdleConns` | 0 | Set to 2-5 to avoid cold-start latency |
-| `ConnMaxIdleTime` | 30 min | Set below Redis server timeout to avoid stale connections |
-| `ConnMaxLifetime` | 0 (no limit) | Set to ~1h in cloud environments for connection rotation |
-| `PoolFIFO` | false (LIFO) | LIFO is lower overhead; FIFO closes idle connections faster |
+	ctrl := gomock.NewController(t)
+	client := mock.NewClient(ctrl)
 
-Monitor pool health:
+	cache := persistence.NewRedisOrderCache(client, 5*time.Minute)
 
-```go
-stats := rdb.PoolStats()
-// stats.Hits      — pool hits (connection reused)
-// stats.Misses    — pool misses (new connection created)
-// stats.Timeouts  — waits that timed out (pool exhausted)
-// stats.TotalConns — current total connections
-// stats.IdleConns  — current idle connections
+	client.EXPECT().B().Return(mock.NewCommandBuilder())
+	client.EXPECT().
+		Do(gomock.Any(), gomock.Any()).
+		Return(mock.Result(mock.RedisNil()))
+
+	_, err := cache.Get(context.Background(), testOrderID)
+	assert.ErrorIs(t, err, order.ErrNotFound)
+}
 ```
 
 #### Health Check Integration
@@ -4283,7 +4448,7 @@ func (h *HealthHandler) Readiness(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Redis check
-	if err := h.rdb.Ping(ctx).Err(); err != nil {
+	if err := h.redis.Do(ctx, h.redis.B().Ping().Build()).Error(); err != nil {
 		checks["redis"] = err.Error()
 		status = http.StatusServiceUnavailable
 	} else {
@@ -4299,21 +4464,20 @@ func (h *HealthHandler) Readiness(w http.ResponseWriter, r *http.Request) {
 
 **RULES:**
 - Every Redis command takes `context.Context` as first parameter. Always pass request-scoped context.
-- Check for `redis.Nil` explicitly — it means key not found, not a failure.
-- Use pipelines to batch multiple commands and reduce round trips.
-- Use `TxPipelined` for atomic multi-command transactions.
-- Use `Watch` + retry loop for optimistic locking (CAS operations).
-- Close `PubSub` and `Conn` resources promptly (`defer pubsub.Close()`).
-- Use `miniredis` for unit tests (fast, no Docker). Use testcontainers for integration tests.
-- Instrument with `redisotel` for automatic tracing and metrics.
+- Use `rueidis.IsRedisNil(err)` to check for key-not-found — never compare with `==`.
+- Auto pipelining is on by default — concurrent `Do()` calls are batched automatically. Only use `DoMulti` when you need results together.
+- Use `DoCache()` with client-side TTL for read-heavy keys — server invalidates on write automatically.
+- Use `client.B()` builder for all commands — never construct raw command strings.
+- Pin commands (`Build().Pin()`) in hot paths to avoid `sync.Pool` allocations.
+- Use `rueidislock` for distributed locks — the `WithContext` pattern auto-cancels on lock loss.
+- Use `Receive()` for Pub/Sub — supports `SUBSCRIBE`, `PSUBSCRIBE`, and Redis 7.0 `SSUBSCRIBE`.
+- Use `rueidis.NewLuaScript` for atomic multi-step operations — auto EVALSHA with EVAL fallback.
+- Mark idempotent write commands as retryable with `Build().ToRetryable()`.
+- Use `rueidisotel.NewClient()` for automatic tracing and caching metrics.
+- Use `github.com/redis/rueidis/mock` for unit tests (fast, no Docker). Use testcontainers for integration tests.
 - Use serialization structs (`cachedOrder`) for Redis values — never serialize domain entities directly.
 - `Reconstitute()` to rebuild domain objects from cache — never `New()`.
 - Invalidate cache on writes. Prefer cache-aside pattern: read from cache, miss → read from DB → set cache.
-- Set `ConnMaxIdleTime` below your Redis server's timeout to avoid stale connections.
-- Monitor `PoolStats().Timeouts` — non-zero means pool is undersized or commands are too slow.
-- Use Lua scripts for atomic multi-step operations (e.g., check-and-deduct).
-- Use Redis Streams + consumer groups for durable event-driven workflows.
-- Use distributed locks (`redislock`) for coordination — set TTL to prevent deadlocks.
 
 ---
 
@@ -4581,7 +4745,8 @@ When the user says "add feature X", execute this checklist:
    - [ ] Add repository port interface (consumer-defined)
    - [ ] Define domain events (if state transitions matter)
    - [ ] Add sentinel errors (`ErrX`)
-   - [ ] Write domain unit tests
+   - [ ] Add `//go:generate mockgen` directives to port interface files
+   - [ ] Write domain unit tests with `testify/assert` + `testify/require`
 
 2. **Application** (`internal/application/{aggregate}/`)
    - [ ] Create command struct (primitive types) + handler (one per file)
@@ -4590,7 +4755,8 @@ When the user says "add feature X", execute this checklist:
    - [ ] Wrap with decorators (logging, metrics) in Application factory
    - [ ] Use `ExecuteInTransaction` for write operations
    - [ ] Define application ports if needed (mailer, storage)
-   - [ ] Write application tests with in-memory adapters
+   - [ ] Generate mocks: `go generate ./...`
+   - [ ] Write application unit tests with gomock + testify
 
 3. **Inbound Adapter** (`internal/adapter/inbound/http/`)
    - [ ] Add HTTP handler methods (request → converter → command → response)
@@ -4617,6 +4783,7 @@ When the user says "add feature X", execute this checklist:
    - [ ] Use Zap structured logging with typed fields
    - [ ] Run all tests: `go test ./...`
    - [ ] Run race detector: `go test -race ./...`
+   - [ ] Verify coverage >= 95%: `go test -coverprofile=coverage.out ./... && go tool cover -func=coverage.out`
    - [ ] Run integration tests: `go test -tags=integration ./...`
    - [ ] Run linters: `go vet ./...` + `staticcheck ./...`
    - [ ] Run arch tests: verify dependency rules pass
