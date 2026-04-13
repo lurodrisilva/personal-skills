@@ -2173,3 +2173,233 @@ COMMAND EXAMPLE:
 | `MailKit` | Email sending via SMTP | Infrastructure |
 | `Serilog` | Structured logging | Web |
 | `Scalar` | API documentation UI | Web |
+
+---
+
+## BRUNO API REQUESTS
+
+Every project MUST include a `bruno/` directory at the repository root containing API request collections managed with [Bruno](https://www.usebruno.com/) — an open-source, offline-first API client that stores requests as plain-text files in version control.
+
+Bruno replaces Postman/Insomnia with Git-friendly `.bru` files that live alongside the code. No cloud sync, no accounts — collections are reviewed, versioned, and shared through the same pull request workflow as the source code.
+
+### Directory Structure
+
+```
+bruno/
+  bruno.json                     # Collection metadata
+  environments/
+    local.bru                    # Local development variables
+    staging.bru                  # Staging environment variables
+  health/
+    get-liveness.bru             # GET /healthz
+    get-readiness.bru            # GET /readyz
+  {aggregate}/
+    create-{entity}.bru          # POST /api/{aggregate}
+    get-{entity}-by-id.bru       # GET /api/{aggregate}/{id}
+    list-{entities}.bru          # GET /api/{aggregate}
+    update-{entity}.bru          # PUT /api/{aggregate}/{id}
+    delete-{entity}.bru          # DELETE /api/{aggregate}/{id}
+```
+
+### Collection Configuration
+
+```json
+// File: bruno/bruno.json
+{
+  "version": "1",
+  "name": "my-api",
+  "type": "collection",
+  "ignore": ["node_modules"]
+}
+```
+
+### Environment Files
+
+```bru
+// File: bruno/environments/local.bru
+vars {
+  baseUrl: https://localhost:5001
+  authToken: dev-token-for-local-testing
+}
+```
+
+```bru
+// File: bruno/environments/staging.bru
+vars {
+  baseUrl: https://api.staging.example.com
+  authToken: {{process.env.STAGING_AUTH_TOKEN}}
+}
+```
+
+### Sample Requests
+
+#### Health Check
+
+```bru
+// File: bruno/health/get-liveness.bru
+meta {
+  name: Get Liveness
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/healthz
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.status).to.equal(200);
+  });
+}
+```
+
+#### Create Entity (POST via FastEndpoints)
+
+```bru
+// File: bruno/{aggregate}/create-{entity}.bru
+meta {
+  name: Create Contributor
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/contributors
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{authToken}}
+}
+
+body:json {
+  {
+    "name": "John Doe",
+    "email": "john@example.com",
+    "status": "Active"
+  }
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setVar("contributorId", res.body.id);
+  }
+}
+
+tests {
+  test("should return 201 Created", function() {
+    expect(res.status).to.equal(201);
+  });
+
+  test("should return contributor id", function() {
+    expect(res.body.id).to.be.a('number');
+  });
+}
+```
+
+#### Get Entity by ID (GET)
+
+```bru
+// File: bruno/{aggregate}/get-{entity}-by-id.bru
+meta {
+  name: Get Contributor by ID
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/contributors/:id
+}
+
+params:path {
+  id: {{contributorId}}
+}
+
+headers {
+  Authorization: Bearer {{authToken}}
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.status).to.equal(200);
+  });
+
+  test("should return the correct contributor", function() {
+    expect(res.body.name).to.equal("John Doe");
+  });
+}
+```
+
+#### List Entities (GET with Query Params)
+
+```bru
+// File: bruno/{aggregate}/list-{entities}.bru
+meta {
+  name: List Contributors
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/contributors
+}
+
+params:query {
+  page: 1
+  pageSize: 20
+  status: Active
+}
+
+headers {
+  Authorization: Bearer {{authToken}}
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.status).to.equal(200);
+  });
+
+  test("should return an array", function() {
+    expect(res.body.items).to.be.an('array');
+  });
+}
+```
+
+### Bruno CLI
+
+Install and run collections from the command line for CI/CD integration:
+
+```bash
+# Install the CLI.
+npm install -g @usebruno/cli
+
+# Run all requests in the collection with the local environment.
+bru run --env local
+
+# Run a specific folder.
+bru run bruno/health --env local
+
+# Run with a JUnit report for CI.
+bru run --env staging --reporter-junit results.xml
+
+# Run only requests tagged as "smoke".
+bru run --env local --tags smoke
+
+# Stop on first failure.
+bru run --env staging --bail
+```
+
+### Key Conventions
+
+| Convention | Rule |
+|---|---|
+| **Directory per aggregate** | Mirror the domain structure — one folder per aggregate under `bruno/` |
+| **File naming** | Use `{verb}-{entity}.bru` pattern (e.g., `create-contributor.bru`, `list-contributors.bru`) |
+| **Route pattern** | Follow FastEndpoints convention: `/api/{aggregate}` (e.g., `/api/contributors`) |
+| **Environment variables** | Store base URLs and tokens in environment files, never hardcode in requests |
+| **Request chaining** | Use `script:post-response` with `bru.setVar()` to pass IDs between requests |
+| **Inline tests** | Every request SHOULD include at least a status code assertion in the `tests` block |
+| **Sequence ordering** | Use `seq` in `meta` to control execution order within a folder |
+| **Secrets** | Use `{{process.env.VAR}}` for sensitive values — never commit real tokens |
+| **Git integration** | The entire `bruno/` directory is committed to version control |
