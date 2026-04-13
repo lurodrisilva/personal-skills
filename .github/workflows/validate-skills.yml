@@ -1,0 +1,25 @@
+name: Validate Skills
+
+on:
+  push:
+    branches: [master]
+    paths: ['coding/**']
+  pull_request:
+    paths: ['coding/**']
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate SKILL.md files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install yq
+        uses: mikefarah/yq@master
+
+      - name: Run skill validation
+        run: ./scripts/validate-skills.sh
