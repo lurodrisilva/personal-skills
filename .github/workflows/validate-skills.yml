@@ -3,9 +3,7 @@ name: Validate Skills
 on:
   push:
     branches: [master]
-    paths: ['coding/**']
   pull_request:
-    paths: ['coding/**']
 
 permissions:
   contents: read
