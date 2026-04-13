@@ -5460,6 +5460,135 @@ docker/run:
 
 ---
 
+## PRE-COMMIT HOOKS
+
+Every project MUST include a `.pre-commit-config.yaml` that enforces code quality gates before commits reach the repository. Pre-commit hooks catch formatting issues, lint violations, and test failures at commit time — before they enter code review or CI.
+
+Based on [pre-commit-golang](https://github.com/tekwizely/pre-commit-golang), which provides Go-specific hooks for the [pre-commit](https://pre-commit.com/) framework.
+
+### Installation
+
+```bash
+# Install pre-commit (macOS).
+brew install pre-commit
+
+# Install the hooks in the repo (run once after cloning).
+pre-commit install
+```
+
+### Configuration
+
+```yaml
+# File: .pre-commit-config.yaml
+
+repos:
+  - repo: https://github.com/tekwizely/pre-commit-golang
+    rev: v1.0.0-rc.4
+    hooks:
+      # ------------------------------------------------------------------ #
+      # Formatting — auto-fix on commit
+      # ------------------------------------------------------------------ #
+      - id: go-fmt-repo
+      - id: go-imports-repo
+
+      # ------------------------------------------------------------------ #
+      # Linting & Static Analysis
+      # ------------------------------------------------------------------ #
+      - id: go-vet-repo-mod
+      - id: go-staticcheck-repo-mod
+      - id: go-revive-repo-mod
+      - id: go-critic
+        args: [--hook:env:GO111MODULE=on]
+
+      # ------------------------------------------------------------------ #
+      # Security
+      # ------------------------------------------------------------------ #
+      - id: go-sec-repo-mod
+      - id: go-vulncheck-repo-mod
+
+      # ------------------------------------------------------------------ #
+      # Testing
+      # ------------------------------------------------------------------ #
+      - id: go-test-repo-mod
+
+      # ------------------------------------------------------------------ #
+      # Module hygiene
+      # ------------------------------------------------------------------ #
+      - id: go-mod-tidy-repo
+
+      # ------------------------------------------------------------------ #
+      # Build verification
+      # ------------------------------------------------------------------ #
+      - id: go-build-repo-mod
+```
+
+### Hook Selection Rationale
+
+| Hook | Why |
+|---|---|
+| `go-fmt-repo` | Enforces canonical formatting across the entire repo, not just staged files |
+| `go-imports-repo` | Fixes import grouping and removes unused imports |
+| `go-vet-repo-mod` | Catches suspicious constructs (printf format mismatches, unreachable code, etc.) |
+| `go-staticcheck-repo-mod` | Advanced static analysis — detects deprecated APIs, unused code, and subtle bugs |
+| `go-revive-repo-mod` | Configurable linter that enforces style rules beyond `go vet` |
+| `go-critic` | Opinionated code reviewer — flags anti-patterns, simplifications, and performance issues |
+| `go-sec-repo-mod` | Scans for common security issues (SQL injection, hardcoded credentials, etc.) |
+| `go-vulncheck-repo-mod` | Checks dependencies against the Go vulnerability database |
+| `go-test-repo-mod` | Runs the full test suite — prevents committing code that breaks existing tests |
+| `go-mod-tidy-repo` | Ensures `go.mod` and `go.sum` stay clean — no missing or unused dependencies |
+| `go-build-repo-mod` | Verifies the project compiles — catches type errors and missing imports |
+
+### Hook Naming Conventions
+
+The hook naming system determines scope and Go module behavior:
+
+| Suffix | Scope | Module Mode | When to Use |
+|---|---|---|---|
+| _(none)_ | Changed files only | Inherits env | Quick checks on individual files |
+| `-mod` | Changed files | `GO111MODULE=on` | File-level checks with module support |
+| `-repo` | Entire repository | Inherits env | Repo-wide checks (formatting, builds) |
+| `-repo-mod` | Entire repository | `GO111MODULE=on` | Repo-wide checks with module support |
+
+Always prefer `-repo-mod` variants for this architecture — they ensure the entire codebase is checked with module mode enabled, not just the staged files.
+
+### Passing Arguments and Environment Variables
+
+```yaml
+# Pass flags to the underlying tool (use '--' to separate from file list).
+- id: go-staticcheck-repo-mod
+  args: [-checks, 'all,-ST1000', '--']
+
+# Set environment variables via --hook:env.
+- id: go-critic
+  args: [--hook:env:GO111MODULE=on, --hook:env:GOFLAGS=-mod=mod]
+
+# Ignore specific directories.
+- id: go-vet-repo-mod
+  args: [--hook:ignore-dir=vendor, --hook:ignore-dir=generated]
+```
+
+### Integration with Makefile
+
+Add a pre-commit target to the project Makefile for CI and onboarding:
+
+```makefile
+# ==================================================================================== #
+# PRE-COMMIT
+# ==================================================================================== #
+
+## precommit/install: install pre-commit hooks
+.PHONY: precommit/install
+precommit/install:
+	pre-commit install
+
+## precommit/run: run all pre-commit hooks against all files
+.PHONY: precommit/run
+precommit/run:
+	pre-commit run --all-files
+```
+
+---
+
 ## QUICK REFERENCE: ADDING A NEW FEATURE (FULL_FEATURE)
 
 When the user says "add feature X", execute this checklist:
