@@ -326,7 +326,7 @@ for _, tt := range tests {
 │       ├── telemetry/
 │       │   └── otel.go                ← OpenTelemetry SDK bootstrap + shutdown
 │       ├── database/
-│       │   └── postgres.go            ← DB connection setup
+│       │   └── postgres.go            ← pgxpool connection setup
 │       ├── eventbus/
 │       │   ├── inmemory.go            ← Synchronous in-process event bus
 │       │   └── async.go              ← Async event bus with worker pool
@@ -1257,7 +1257,7 @@ func Recoverer(next http.Handler) http.Handler {
 
 ## PHASE 4: OUTBOUND ADAPTERS (`internal/adapter/outbound/`)
 
-### 4.1 Repository Implementation (PostgreSQL)
+### 4.1 Repository Implementation (PostgreSQL with pgx)
 
 ```go
 // File: internal/adapter/outbound/persistence/order.go
@@ -1265,10 +1265,12 @@ package persistence
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"{module}/internal/domain/order"
 )
@@ -1276,54 +1278,63 @@ import (
 // Compile-time check: PostgresOrderRepo implements order.Repository.
 var _ order.Repository = (*PostgresOrderRepo)(nil)
 
-// PostgresOrderRepo implements order.Repository using PostgreSQL.
+// PostgresOrderRepo implements order.Repository using PostgreSQL via pgx.
 type PostgresOrderRepo struct {
-	db *sql.DB
+	pool *pgxpool.Pool
 }
 
-func NewPostgresOrderRepo(db *sql.DB) *PostgresOrderRepo {
-	return &PostgresOrderRepo{db: db}
+func NewPostgresOrderRepo(pool *pgxpool.Pool) *PostgresOrderRepo {
+	return &PostgresOrderRepo{pool: pool}
 }
 
 func (r *PostgresOrderRepo) Save(ctx context.Context, o *order.Order) error {
 	query := `
 		INSERT INTO orders (id, customer_id, status, total_cents, currency, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		VALUES (@id, @customerID, @status, @totalCents, @currency, @createdAt, @updatedAt)
 		ON CONFLICT (id) DO UPDATE SET
 			status = EXCLUDED.status,
 			total_cents = EXCLUDED.total_cents,
 			updated_at = EXCLUDED.updated_at`
 
-	_, err := r.db.ExecContext(ctx, query,
-		o.ID().String(),
-		o.Customer().String(),
-		o.Status().String(),
-		o.Total().Amount(),
-		o.Total().Currency(),
-		o.CreatedAt(),
-		o.UpdatedAt(),
-	)
+	args := pgx.NamedArgs{
+		"id":         o.ID().String(),
+		"customerID": o.Customer().String(),
+		"status":     o.Status().String(),
+		"totalCents": o.Total().Amount(),
+		"currency":   o.Total().Currency(),
+		"createdAt":  o.CreatedAt(),
+		"updatedAt":  o.UpdatedAt(),
+	}
+
+	_, err := r.pool.Exec(ctx, query, args)
 	if err != nil {
 		return fmt.Errorf("save order: %w", err)
 	}
 
-	// Save line items (simplified — use a transaction in production)
+	// Save line items using Batch for efficiency
+	batch := &pgx.Batch{}
 	for _, item := range o.Items() {
-		itemQuery := `
+		batch.Queue(`
 			INSERT INTO order_items (order_id, product_id, quantity, price_cents, currency)
-			VALUES ($1, $2, $3, $4, $5)
+			VALUES (@orderID, @productID, @quantity, @priceCents, @currency)
 			ON CONFLICT (order_id, product_id) DO UPDATE SET
 				quantity = EXCLUDED.quantity,
-				price_cents = EXCLUDED.price_cents`
-
-		_, err := r.db.ExecContext(ctx, itemQuery,
-			o.ID().String(),
-			item.ProductID().String(),
-			item.Quantity(),
-			item.Price().Amount(),
-			item.Price().Currency(),
+				price_cents = EXCLUDED.price_cents`,
+			pgx.NamedArgs{
+				"orderID":    o.ID().String(),
+				"productID":  item.ProductID().String(),
+				"quantity":   item.Quantity(),
+				"priceCents": item.Price().Amount(),
+				"currency":   item.Price().Currency(),
+			},
 		)
-		if err != nil {
+	}
+
+	br := r.pool.SendBatch(ctx, batch)
+	defer br.Close()
+
+	for range o.Items() {
+		if _, err := br.Exec(); err != nil {
 			return fmt.Errorf("save order item: %w", err)
 		}
 	}
@@ -1332,17 +1343,18 @@ func (r *PostgresOrderRepo) Save(ctx context.Context, o *order.Order) error {
 }
 
 func (r *PostgresOrderRepo) FindByID(ctx context.Context, id order.OrderID) (*order.Order, error) {
-	row := r.db.QueryRowContext(ctx, `
-		SELECT id, customer_id, status, total_cents, currency, created_at, updated_at
-		FROM orders WHERE id = $1`, id.String())
-
 	var (
 		rawID, rawCustomer, rawStatus, rawCurrency string
 		totalCents                                  int64
 		createdAt, updatedAt                        time.Time
 	)
-	if err := row.Scan(&rawID, &rawCustomer, &rawStatus, &rawCurrency, &totalCents, &createdAt, &updatedAt); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+
+	err := r.pool.QueryRow(ctx, `
+		SELECT id, customer_id, status, total_cents, currency, created_at, updated_at
+		FROM orders WHERE id = $1`, id.String(),
+	).Scan(&rawID, &rawCustomer, &rawStatus, &rawCurrency, &totalCents, &createdAt, &updatedAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, order.ErrNotFound
 		}
 		return nil, fmt.Errorf("find order: %w", err)
@@ -1362,12 +1374,12 @@ func (r *PostgresOrderRepo) FindByID(ctx context.Context, id order.OrderID) (*or
 }
 
 func (r *PostgresOrderRepo) FindByCustomer(ctx context.Context, customerID order.CustomerID) ([]*order.Order, error) {
-	// Implementation follows same pattern as FindByID with a query loop
+	// Implementation follows same pattern as FindByID with pgx.CollectRows
 	return nil, nil // placeholder
 }
 
 func (r *PostgresOrderRepo) Delete(ctx context.Context, id order.OrderID) error {
-	_, err := r.db.ExecContext(ctx, `DELETE FROM orders WHERE id = $1`, id.String())
+	_, err := r.pool.Exec(ctx, `DELETE FROM orders WHERE id = $1`, id.String())
 	if err != nil {
 		return fmt.Errorf("delete order: %w", err)
 	}
@@ -1375,7 +1387,7 @@ func (r *PostgresOrderRepo) Delete(ctx context.Context, id order.OrderID) error 
 }
 
 func (r *PostgresOrderRepo) findItems(ctx context.Context, orderID order.OrderID) ([]order.LineItem, error) {
-	rows, err := r.db.QueryContext(ctx, `
+	rows, err := r.pool.Query(ctx, `
 		SELECT product_id, quantity, price_cents, currency
 		FROM order_items WHERE order_id = $1`, orderID.String())
 	if err != nil {
@@ -1507,7 +1519,7 @@ func (p *LogEventPublisher) Publish(ctx context.Context, events ...order.Event) 
 
 **RULES:**
 - Every adapter struct starts with compile-time interface check: `var _ Port = (*Adapter)(nil)`.
-- Constructor: `NewXAdapter(deps...)`. Dependencies are concrete infrastructure types (sql.DB, slog.Logger).
+- Constructor: `NewXAdapter(deps...)`. Dependencies are concrete infrastructure types (pgxpool.Pool, slog.Logger).
 - `Reconstitute()` to rebuild domain objects from storage — never `New()` (which validates + fires events).
 - In-memory adapters for testing — same interface, thread-safe with `sync.RWMutex`.
 - Always `defer rows.Close()` and check `rows.Err()` after scan loop.
@@ -1609,7 +1621,7 @@ func envOrDefault(key, defaultVal string) string {
 }
 ```
 
-### 5.2 Database Setup
+### 5.2 Database Setup (pgx)
 
 ```go
 // File: internal/infrastructure/database/postgres.go
@@ -1617,37 +1629,54 @@ package database
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"time"
 
-	_ "github.com/lib/pq" // PostgreSQL driver
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"{module}/internal/infrastructure/config"
 )
 
-// NewPostgres opens a PostgreSQL connection pool.
-func NewPostgres(cfg config.DatabaseConfig) (*sql.DB, error) {
-	db, err := sql.Open("postgres", cfg.DSN())
+// NewPostgres creates a pgx connection pool.
+func NewPostgres(cfg config.DatabaseConfig) (*pgxpool.Pool, error) {
+	poolCfg, err := pgxpool.ParseConfig(cfg.DSN())
 	if err != nil {
-		return nil, fmt.Errorf("open postgres: %w", err)
+		return nil, fmt.Errorf("parse postgres config: %w", err)
 	}
 
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(5)
-	db.SetConnMaxLifetime(5 * time.Minute)
+	// Connection pool settings
+	poolCfg.MaxConns = 25
+	poolCfg.MinConns = 5
+	poolCfg.MaxConnLifetime = 30 * time.Minute
+	poolCfg.MaxConnIdleTime = 5 * time.Minute
+	poolCfg.HealthCheckPeriod = 30 * time.Second
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	if err := db.PingContext(ctx); err != nil {
-		db.Close()
+	pool, err := pgxpool.NewWithConfig(ctx, poolCfg)
+	if err != nil {
+		return nil, fmt.Errorf("create postgres pool: %w", err)
+	}
+
+	if err := pool.Ping(ctx); err != nil {
+		pool.Close()
 		return nil, fmt.Errorf("ping postgres: %w", err)
 	}
 
-	return db, nil
+	return pool, nil
 }
 ```
+
+**pgxpool configuration reference:**
+
+| Option | Default | Guidance |
+|--------|---------|----------|
+| `MaxConns` | 4 (per CPU) | Set to ~25 for typical web services. Match or stay below PostgreSQL `max_connections`. |
+| `MinConns` | 0 | Set to 2-5 to avoid cold-start latency |
+| `MaxConnLifetime` | 1h | Set to ~30m in cloud environments for connection rotation |
+| `MaxConnIdleTime` | 30m | Reclaims unused connections. Lower in high-churn environments. |
+| `HealthCheckPeriod` | 1m | Frequency of background health checks on idle connections |
 
 ### 5.3 HTTP Server with Graceful Shutdown
 
@@ -1717,8 +1746,9 @@ func (s *HTTP) Run(ctx context.Context, shutdownTimeout time.Duration) error {
 package di
 
 import (
-	"database/sql"
 	"log/slog"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"{module}/internal/adapter/inbound/http/handler"
 	"{module}/internal/adapter/outbound/messaging"
@@ -1732,9 +1762,9 @@ type Container struct {
 }
 
 // NewContainer wires all dependencies.
-func NewContainer(db *sql.DB, logger *slog.Logger) *Container {
+func NewContainer(pool *pgxpool.Pool, logger *slog.Logger) *Container {
 	// Outbound adapters
-	orderRepo := persistence.NewPostgresOrderRepo(db)
+	orderRepo := persistence.NewPostgresOrderRepo(pool)
 	eventPub := messaging.NewLogEventPublisher(logger)
 
 	// Application handlers
@@ -2048,7 +2078,7 @@ Before finishing any implementation, verify NONE of these exist:
 
 | Anti-Pattern | Why It's Wrong | Fix |
 |-------------|----------------|-----|
-| Domain imports `database/sql` or any adapter package | Violates dependency rule | Define port interface in domain, implement in adapter |
+| Domain imports `pgx`, `database/sql`, or any adapter package | Violates dependency rule | Define port interface in domain, implement in adapter |
 | Application imports adapter package | Violates dependency rule | Use port interfaces |
 | Entity with exported fields | Breaks encapsulation | Unexported fields + getter methods |
 | Entity modified directly (no method) | Bypasses invariant enforcement | Mutation methods with validation |
@@ -2462,7 +2492,7 @@ func (h *CreateOrderHandler) Handle(ctx context.Context, cmd CreateOrderCommand)
 - `ExecuteInTransaction` handles commit/rollback automatically.
 - Publish domain events AFTER the transaction commits (avoid publishing events for rolled-back operations).
 - Use `NoopTransaction` in unit tests.
-- For GORM/sqlx: pass `*gorm.DB` or `*sql.Tx` through context in the adapter implementation.
+- For GORM/sqlx: pass `*gorm.DB` or `pgx.Tx` through context in the adapter implementation.
 
 ### Application Factory
 
@@ -2739,7 +2769,7 @@ func TestDependencyRules(t *testing.T) {
 		{
 			name:       "domain must not import third-party DB/HTTP",
 			pkg:        "internal/domain",
-			disallowed: []string{"database/sql", "net/http", "gorm.io", "github.com/gin-gonic", "github.com/lib/pq"},
+			disallowed: []string{"database/sql", "net/http", "gorm.io", "github.com/gin-gonic", "github.com/jackc/pgx"},
 		},
 	}
 
@@ -2806,7 +2836,7 @@ func findModuleRoot(t *testing.T) string {
 **RULES:**
 - Place in `internal/infrastructure/archtest/` or a top-level `archtest/` package.
 - Run with every `go test ./...` — violations break the build.
-- Check both internal layer imports and external package imports (no `database/sql` in domain).
+- Check both internal layer imports and external package imports (no `pgx` or `database/sql` in domain).
 - This is the automated enforcement of the dependency law table from the Architecture Rules section.
 
 ### Health Checks / Probes
@@ -2819,19 +2849,20 @@ package handler
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"net/http"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // HealthHandler provides liveness and readiness probes.
 type HealthHandler struct {
-	db *sql.DB
+	pool *pgxpool.Pool
 }
 
-func NewHealthHandler(db *sql.DB) *HealthHandler {
-	return &HealthHandler{db: db}
+func NewHealthHandler(pool *pgxpool.Pool) *HealthHandler {
+	return &HealthHandler{pool: pool}
 }
 
 // Liveness indicates the process is running. Always returns 200.
@@ -2847,7 +2878,7 @@ func (h *HealthHandler) Readiness(w http.ResponseWriter, r *http.Request) {
 	checks := map[string]string{}
 	status := http.StatusOK
 
-	if err := h.db.PingContext(ctx); err != nil {
+	if err := h.pool.Ping(ctx); err != nil {
 		checks["database"] = err.Error()
 		status = http.StatusServiceUnavailable
 	} else {
@@ -2983,11 +3014,10 @@ package persistence_test
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"testing"
 
-	_ "github.com/lib/pq"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
@@ -2995,7 +3025,7 @@ import (
 	"{module}/internal/domain/order"
 )
 
-func setupPostgres(t *testing.T) *sql.DB {
+func setupPostgres(t *testing.T) *pgxpool.Pool {
 	t.Helper()
 	ctx := context.Background()
 
@@ -3019,23 +3049,23 @@ func setupPostgres(t *testing.T) *sql.DB {
 
 	host, _ := container.Host(ctx)
 	port, _ := container.MappedPort(ctx, "5432")
-	dsn := fmt.Sprintf("host=%s port=%s user=test password=test dbname=testdb sslmode=disable", host, port.Port())
+	dsn := fmt.Sprintf("postgres://test:test@%s:%s/testdb?sslmode=disable", host, port.Port())
 
-	db, err := sql.Open("postgres", dsn)
+	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
-		t.Fatalf("open db: %v", err)
+		t.Fatalf("create pool: %v", err)
 	}
-	t.Cleanup(func() { db.Close() })
+	t.Cleanup(func() { pool.Close() })
 
 	// Run migrations
-	runMigrations(t, db)
+	runMigrations(t, pool)
 
-	return db
+	return pool
 }
 
-func runMigrations(t *testing.T, db *sql.DB) {
+func runMigrations(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
-	_, err := db.Exec(`
+	_, err := pool.Exec(context.Background(), `
 		CREATE TABLE IF NOT EXISTS orders (
 			id TEXT PRIMARY KEY,
 			customer_id TEXT NOT NULL,
@@ -3064,8 +3094,8 @@ func TestPostgresOrderRepo_SaveAndFind(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
-	db := setupPostgres(t)
-	repo := persistence.NewPostgresOrderRepo(db)
+	pool := setupPostgres(t)
+	repo := persistence.NewPostgresOrderRepo(pool)
 	ctx := context.Background()
 
 	// Create and save
@@ -3166,7 +3196,7 @@ Use these production-grade packages and runtime techniques when building Go proj
 | Redis Lock | `github.com/bsm/redislock` | Distributed locks on top of go-redis |
 | Redis Cache | `github.com/go-redis/cache/v8` | L1 (TinyLFU) + L2 (Redis) caching layer |
 | Redis Testing | `github.com/alicebob/miniredis/v2` | In-memory Redis for unit tests (no Docker needed) |
-| DB Driver | `github.com/lib/pq` or `github.com/jackc/pgx/v5` | PostgreSQL (pgx is faster, pure Go) |
+| DB Driver | `github.com/jackc/pgx/v5` | Pure Go PostgreSQL driver, native interface + connection pool (pgxpool) |
 | Migrations | `github.com/golang-migrate/migrate/v4` | Version-controlled schema migrations |
 | Testing (containers) | `github.com/testcontainers/testcontainers-go` | Real DB/Redis in integration tests |
 | DI (large projects) | `github.com/google/wire` | Compile-time dependency injection |
