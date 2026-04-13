@@ -3162,6 +3162,10 @@ Use these production-grade packages and runtime techniques when building Go proj
 | GC Tuning | `GOGC` + `GOMEMLIMIT` | Control GC frequency and memory ceiling in containers |
 | Race Detection | `go build -race` | ThreadSanitizer-based race detector for development/CI |
 | UUID | `github.com/google/uuid` | RFC 4122 UUIDs, typed IDs |
+| Redis | `github.com/redis/go-redis/v9` | Type-safe client, pipelining, pub/sub, streams, cluster, OTel integration |
+| Redis Lock | `github.com/bsm/redislock` | Distributed locks on top of go-redis |
+| Redis Cache | `github.com/go-redis/cache/v8` | L1 (TinyLFU) + L2 (Redis) caching layer |
+| Redis Testing | `github.com/alicebob/miniredis/v2` | In-memory Redis for unit tests (no Docker needed) |
 | DB Driver | `github.com/lib/pq` or `github.com/jackc/pgx/v5` | PostgreSQL (pgx is faster, pure Go) |
 | Migrations | `github.com/golang-migrate/migrate/v4` | Version-controlled schema migrations |
 | Testing (containers) | `github.com/testcontainers/testcontainers-go` | Real DB/Redis in integration tests |
@@ -3808,6 +3812,508 @@ All existing code (`json.Marshal`, `json.Unmarshal`, `json.NewEncoder`, `json.Ne
 - Use `goccy/go-json` as the default JSON package in application code.
 - Use an import alias (`import json "github.com/goccy/go-json"`) so existing code requires no changes.
 - In Fiber: Fiber v3 already uses a fast JSON encoder internally. Use `go-json` for manual marshaling in application/domain layers.
+
+---
+
+### Redis: go-redis v9
+
+`github.com/redis/go-redis/v9` is the recommended Redis client. Type-safe, context-aware, supports standalone, sentinel, cluster, and ring topologies.
+
+**Installation:**
+
+```bash
+go get github.com/redis/go-redis/v9
+```
+
+#### Client Creation
+
+```go
+// File: internal/infrastructure/redis/client.go
+package redis
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/redis/go-redis/v9"
+
+	"{module}/internal/infrastructure/config"
+)
+
+// NewClient creates a Redis client from config.
+func NewClient(cfg config.RedisConfig) (*redis.Client, error) {
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     cfg.Addr,
+		Password: cfg.Password,
+		DB:       cfg.DB,
+
+		// Connection pool
+		PoolSize:        10, // per CPU by default (10 * GOMAXPROCS)
+		MinIdleConns:    2,
+		ConnMaxIdleTime: 30 * time.Minute,
+
+		// Timeouts
+		DialTimeout:  5 * time.Second,
+		ReadTimeout:  3 * time.Second,
+		WriteTimeout: 3 * time.Second,
+
+		// Retry
+		MaxRetries:      3,
+		MinRetryBackoff: 8 * time.Millisecond,
+		MaxRetryBackoff: 512 * time.Millisecond,
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		rdb.Close()
+		return nil, fmt.Errorf("ping redis: %w", err)
+	}
+
+	return rdb, nil
+}
+```
+
+**Client topologies — choose based on workload:**
+
+```go
+// Standalone (single node)
+rdb := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
+
+// From URL
+opt, _ := redis.ParseURL("redis://user:pass@localhost:6379/0?protocol=3")
+rdb := redis.NewClient(opt)
+
+// Sentinel (automatic failover)
+rdb := redis.NewFailoverClient(&redis.FailoverOptions{
+	MasterName:    "mymaster",
+	SentinelAddrs: []string{":26379", ":26380", ":26381"},
+})
+
+// Cluster (horizontal scaling)
+rdb := redis.NewClusterClient(&redis.ClusterOptions{
+	Addrs: []string{":7000", ":7001", ":7002"},
+})
+
+// Ring (client-side consistent hashing — cache workloads)
+rdb := redis.NewRing(&redis.RingOptions{
+	Addrs: map[string]string{
+		"shard1": "localhost:6379",
+		"shard2": "localhost:6380",
+	},
+})
+
+// Universal (auto-picks type based on options)
+rdb := redis.NewUniversalClient(&redis.UniversalOptions{
+	Addrs:      []string{":6379"},         // 1 addr = standalone, 2+ = cluster
+	MasterName: "mymaster",                // if set = sentinel
+})
+```
+
+#### Cache Repository Implementation
+
+```go
+// File: internal/adapter/outbound/persistence/order_cache.go
+package persistence
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/redis/go-redis/v9"
+	json "github.com/goccy/go-json"
+
+	"{module}/internal/domain/order"
+)
+
+// RedisOrderCache implements a cache layer for orders.
+type RedisOrderCache struct {
+	rdb *redis.Client
+	ttl time.Duration
+}
+
+func NewRedisOrderCache(rdb *redis.Client, ttl time.Duration) *RedisOrderCache {
+	return &RedisOrderCache{rdb: rdb, ttl: ttl}
+}
+
+func (c *RedisOrderCache) Get(ctx context.Context, id order.OrderID) (*order.Order, error) {
+	data, err := c.rdb.Get(ctx, c.key(id)).Bytes()
+	if err == redis.Nil {
+		return nil, order.ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("redis get order: %w", err)
+	}
+
+	var cached cachedOrder
+	if err := json.Unmarshal(data, &cached); err != nil {
+		return nil, fmt.Errorf("unmarshal cached order: %w", err)
+	}
+
+	return cached.toDomain(), nil
+}
+
+func (c *RedisOrderCache) Set(ctx context.Context, o *order.Order) error {
+	cached := fromDomain(o)
+	data, err := json.Marshal(cached)
+	if err != nil {
+		return fmt.Errorf("marshal order: %w", err)
+	}
+
+	if err := c.rdb.Set(ctx, c.key(o.ID()), data, c.ttl).Err(); err != nil {
+		return fmt.Errorf("redis set order: %w", err)
+	}
+	return nil
+}
+
+func (c *RedisOrderCache) Invalidate(ctx context.Context, id order.OrderID) error {
+	return c.rdb.Del(ctx, c.key(id)).Err()
+}
+
+func (c *RedisOrderCache) key(id order.OrderID) string {
+	return fmt.Sprintf("order:%s", id.String())
+}
+
+// cachedOrder is the serialization format for Redis (not a domain type).
+type cachedOrder struct {
+	ID         string `json:"id"`
+	CustomerID string `json:"customer_id"`
+	Status     string `json:"status"`
+	TotalCents int64  `json:"total_cents"`
+	Currency   string `json:"currency"`
+}
+
+func fromDomain(o *order.Order) cachedOrder {
+	return cachedOrder{
+		ID:         o.ID().String(),
+		CustomerID: o.Customer().String(),
+		Status:     o.Status().String(),
+		TotalCents: o.Total().Amount(),
+		Currency:   o.Total().Currency(),
+	}
+}
+
+func (c cachedOrder) toDomain() *order.Order {
+	id, _ := order.ParseOrderID(c.ID)
+	customerID, _ := order.ParseCustomerID(c.CustomerID)
+	// Use Reconstitute — no validation, no events
+	return order.Reconstitute(id, customerID, nil, parseStatus(c.Status),
+		order.Money{}, time.Time{}, time.Time{})
+}
+```
+
+#### Pipelines (Batch Commands)
+
+Reduce round trips by batching multiple commands in a single request/response cycle.
+
+```go
+// Functional pipeline (preferred)
+var getCmd *redis.StringCmd
+cmds, err := rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+	getCmd = pipe.Get(ctx, "key1")
+	pipe.Set(ctx, "key2", "value2", time.Hour)
+	pipe.Incr(ctx, "counter")
+	return nil
+})
+// Results available after Exec
+fmt.Println(getCmd.Val())
+
+// Iterate results
+for _, cmd := range cmds {
+	fmt.Println(cmd.(*redis.StringCmd).Val())
+}
+```
+
+#### Transactions (MULTI/EXEC)
+
+```go
+// Atomic transaction
+cmds, err := rdb.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
+	pipe.Set(ctx, "key1", "val1", 0)
+	pipe.Set(ctx, "key2", "val2", 0)
+	pipe.Incr(ctx, "counter")
+	return nil
+})
+```
+
+#### Optimistic Locking (WATCH)
+
+```go
+func incrementKey(ctx context.Context, rdb *redis.Client, key string) error {
+	txf := func(tx *redis.Tx) error {
+		n, err := tx.Get(ctx, key).Int()
+		if err != nil && err != redis.Nil {
+			return err
+		}
+		n++
+		_, err = tx.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
+			pipe.Set(ctx, key, n, 0)
+			return nil
+		})
+		return err
+	}
+
+	for i := 0; i < 100; i++ {
+		err := rdb.Watch(ctx, txf, key)
+		if err == nil {
+			return nil
+		}
+		if err == redis.TxFailedErr {
+			continue // key changed, retry
+		}
+		return err
+	}
+	return errors.New("max retries exceeded")
+}
+```
+
+#### Pub/Sub
+
+```go
+// Publisher
+err := rdb.Publish(ctx, "order.events", payload).Err()
+
+// Subscriber
+pubsub := rdb.Subscribe(ctx, "order.events")
+defer pubsub.Close()
+
+// Blocking receive loop
+ch := pubsub.Channel()
+for msg := range ch {
+	fmt.Println(msg.Channel, msg.Payload)
+}
+
+// Pattern subscribe
+pubsub := rdb.PSubscribe(ctx, "order.*")
+```
+
+#### Streams (Event Sourcing / Message Queues)
+
+```go
+// Produce
+id, err := rdb.XAdd(ctx, &redis.XAddArgs{
+	Stream: "order-events",
+	Values: map[string]interface{}{
+		"event":    "order.created",
+		"order_id": orderID,
+		"payload":  string(jsonPayload),
+	},
+}).Result()
+
+// Consumer group setup
+rdb.XGroupCreateMkStream(ctx, "order-events", "order-processor", "0")
+
+// Consume (blocking)
+streams, err := rdb.XReadGroup(ctx, &redis.XReadGroupArgs{
+	Group:    "order-processor",
+	Consumer: "worker-1",
+	Streams:  []string{"order-events", ">"},
+	Count:    10,
+	Block:    5 * time.Second,
+}).Result()
+
+for _, stream := range streams {
+	for _, msg := range stream.Messages {
+		// Process message
+		fmt.Println(msg.ID, msg.Values)
+		// Acknowledge
+		rdb.XAck(ctx, "order-events", "order-processor", msg.ID)
+	}
+}
+```
+
+#### Distributed Locks
+
+```go
+import "github.com/bsm/redislock"
+
+locker := redislock.New(rdb)
+
+lock, err := locker.Obtain(ctx, "order:123:lock", 10*time.Second, nil)
+if err == redislock.ErrNotObtained {
+	return errors.New("could not acquire lock")
+}
+if err != nil {
+	return fmt.Errorf("obtain lock: %w", err)
+}
+defer lock.Release(ctx)
+
+// Extend if work takes longer
+if err := lock.Refresh(ctx, 10*time.Second, nil); err != nil {
+	return fmt.Errorf("extend lock: %w", err)
+}
+```
+
+#### Lua Scripting
+
+```go
+var deductStock = redis.NewScript(`
+	local stock = tonumber(redis.call("GET", KEYS[1]))
+	if not stock or stock < tonumber(ARGV[1]) then
+		return 0
+	end
+	redis.call("DECRBY", KEYS[1], ARGV[1])
+	return 1
+`)
+
+ok, err := deductStock.Run(ctx, rdb, []string{"stock:product:123"}, 5).Int()
+if ok == 0 {
+	return errors.New("insufficient stock")
+}
+// Uses EVALSHA (cached), falls back to EVAL automatically
+```
+
+#### Error Handling
+
+```go
+val, err := rdb.Get(ctx, "key").Result()
+switch {
+case err == redis.Nil:
+	// Key does not exist — not a failure
+	return "", order.ErrNotFound
+case err != nil:
+	// Actual Redis error
+	return "", fmt.Errorf("redis get: %w", err)
+default:
+	return val, nil
+}
+
+// Typed error checks for cluster/sentinel scenarios
+if redis.IsMovedError(err)  { /* key moved to another shard */ }
+if redis.IsReadOnlyError(err) { /* write to read-only replica */ }
+if redis.IsTryAgainError(err) { /* retry the operation */ }
+```
+
+#### OpenTelemetry Integration
+
+```go
+import "github.com/redis/go-redis/extra/redisotel/v9"
+
+rdb := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
+
+// Add tracing + metrics instrumentation
+if err := errors.Join(
+	redisotel.InstrumentTracing(rdb),
+	redisotel.InstrumentMetrics(rdb),
+); err != nil {
+	return fmt.Errorf("instrument redis: %w", err)
+}
+```
+
+Install: `go get github.com/redis/go-redis/extra/redisotel/v9`
+
+#### Testing with miniredis
+
+```go
+import "github.com/alicebob/miniredis/v2"
+
+func TestOrderCache(t *testing.T) {
+	t.Parallel()
+
+	mr := miniredis.RunT(t) // auto-cleanup on test end
+
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	cache := persistence.NewRedisOrderCache(rdb, 5*time.Minute)
+
+	o := newTestOrder(t)
+
+	// Set
+	if err := cache.Set(context.Background(), o); err != nil {
+		t.Fatalf("Set() error: %v", err)
+	}
+
+	// Get
+	got, err := cache.Get(context.Background(), o.ID())
+	if err != nil {
+		t.Fatalf("Get() error: %v", err)
+	}
+	if got.ID() != o.ID() {
+		t.Errorf("ID() = %v, want %v", got.ID(), o.ID())
+	}
+
+	// TTL expiry
+	mr.FastForward(6 * time.Minute)
+	_, err = cache.Get(context.Background(), o.ID())
+	if !errors.Is(err, order.ErrNotFound) {
+		t.Errorf("expected ErrNotFound after TTL, got %v", err)
+	}
+}
+```
+
+#### Connection Pool Tuning
+
+| Option | Default | Guidance |
+|--------|---------|----------|
+| `PoolSize` | 10 * GOMAXPROCS | Sufficient for most workloads. Increase only if `PoolStats().Timeouts > 0` |
+| `MinIdleConns` | 0 | Set to 2-5 to avoid cold-start latency |
+| `ConnMaxIdleTime` | 30 min | Set below Redis server timeout to avoid stale connections |
+| `ConnMaxLifetime` | 0 (no limit) | Set to ~1h in cloud environments for connection rotation |
+| `PoolFIFO` | false (LIFO) | LIFO is lower overhead; FIFO closes idle connections faster |
+
+Monitor pool health:
+
+```go
+stats := rdb.PoolStats()
+// stats.Hits      — pool hits (connection reused)
+// stats.Misses    — pool misses (new connection created)
+// stats.Timeouts  — waits that timed out (pool exhausted)
+// stats.TotalConns — current total connections
+// stats.IdleConns  — current idle connections
+```
+
+#### Health Check Integration
+
+```go
+func (h *HealthHandler) Readiness(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	defer cancel()
+
+	checks := map[string]string{"status": "ready"}
+	status := http.StatusOK
+
+	// Database check
+	if err := h.db.PingContext(ctx); err != nil {
+		checks["database"] = err.Error()
+		status = http.StatusServiceUnavailable
+	} else {
+		checks["database"] = "ok"
+	}
+
+	// Redis check
+	if err := h.rdb.Ping(ctx).Err(); err != nil {
+		checks["redis"] = err.Error()
+		status = http.StatusServiceUnavailable
+	} else {
+		checks["redis"] = "ok"
+	}
+
+	if status != http.StatusOK {
+		checks["status"] = "not ready"
+	}
+	writeJSON(w, status, checks)
+}
+```
+
+**RULES:**
+- Every Redis command takes `context.Context` as first parameter. Always pass request-scoped context.
+- Check for `redis.Nil` explicitly — it means key not found, not a failure.
+- Use pipelines to batch multiple commands and reduce round trips.
+- Use `TxPipelined` for atomic multi-command transactions.
+- Use `Watch` + retry loop for optimistic locking (CAS operations).
+- Close `PubSub` and `Conn` resources promptly (`defer pubsub.Close()`).
+- Use `miniredis` for unit tests (fast, no Docker). Use testcontainers for integration tests.
+- Instrument with `redisotel` for automatic tracing and metrics.
+- Use serialization structs (`cachedOrder`) for Redis values — never serialize domain entities directly.
+- `Reconstitute()` to rebuild domain objects from cache — never `New()`.
+- Invalidate cache on writes. Prefer cache-aside pattern: read from cache, miss → read from DB → set cache.
+- Set `ConnMaxIdleTime` below your Redis server's timeout to avoid stale connections.
+- Monitor `PoolStats().Timeouts` — non-zero means pool is undersized or commands are too slow.
+- Use Lua scripts for atomic multi-step operations (e.g., check-and-deduct).
+- Use Redis Streams + consumer groups for durable event-driven workflows.
+- Use distributed locks (`redislock`) for coordination — set TTL to prevent deadlocks.
 
 ---
 
