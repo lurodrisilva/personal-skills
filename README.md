@@ -62,7 +62,7 @@ Each skill file uses YAML frontmatter followed by markdown content:
 ---
 name: skill-name
 description: When and why to load this skill
-license: MIT
+license: BSD-3-Clause
 compatibility: opencode
 metadata:
   language: golang
@@ -115,4 +115,4 @@ The CI pipeline runs on every push to `master` and every pull request:
 
 ## License
 
-MIT
+BSD-3-Clause — see [LICENSE](LICENSE).

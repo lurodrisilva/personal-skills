@@ -1,7 +1,7 @@
 ---
 name: dockerfile-instructions
 description: MUST USE when creating, reviewing, or modifying a Dockerfile, Containerfile, or *.Dockerfile. Use when the user asks to "write a Dockerfile", "containerize an app", "shrink an image", "speed up docker build", "multi-stage build", "multi-arch build", "buildx", "cross-compile for arm64", "distroless", or wires up a container build in CI. Covers BuildKit prerequisites, multi-stage builds, size + build-time optimization (layer order, cache mounts, bind mounts, secret mounts, cache backends), multi-architecture builds (buildx, QEMU, TARGETPLATFORM, manifest lists), per-language templates (Go, Node/TS, Python, .NET, Rust, Java), .dockerignore, non-root USER, HEALTHCHECK, pinned base images, and CI patterns. Does NOT replace language build tools — wraps them inside reproducible, minimal container images.
-license: MIT
+license: BSD-3-Clause
 compatibility: opencode
 metadata:
   domain: build-tooling

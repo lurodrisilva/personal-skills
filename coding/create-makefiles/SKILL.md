@@ -1,7 +1,7 @@
 ---
 name: create-makefiles
 description: MUST USE when creating, reviewing, or modifying a Makefile, GNUmakefile, or *.mk file. Use when the user asks to "add a Makefile", "create a Makefile", "set up make targets", "add build automation", "make target", "scaffold make", or wraps multi-tool workflows (build + test + lint + docker + migrations) behind a unified task-runner interface. Covers safe shell defaults, self-documenting help targets, variable flavors, pattern rules, automatic variables, phony targets, parallel execution, portability, and per-language templates (Go, Node, Python, .NET, C/C++). Does NOT replace native build tools — wraps them.
-license: MIT
+license: BSD-3-Clause
 compatibility: opencode
 metadata:
   domain: build-tooling
