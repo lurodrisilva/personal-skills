@@ -1,7 +1,7 @@
 ---
 name: dotnet-clean-arch
 description: MUST USE when working on .NET Clean Architecture projects (Ardalis template). Guides implementation of aggregates, value objects, CQRS use cases, FastEndpoints API, and infrastructure following strict layering rules with dependency inversion. Covers domain events, specifications, Vogen value objects, Mediator handlers, EF Core configuration, and DI registration.
-license: MIT
+license: BSD-3-Clause
 compatibility: opencode
 metadata:
   framework: dotnet

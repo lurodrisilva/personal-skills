@@ -1,7 +1,7 @@
 ---
 name: golang-hex-clean
 description: MUST USE when working on Go Hexagonal/Clean Architecture projects. Guides implementation of aggregates, value objects, use cases (CQRS), HTTP/gRPC adapters, and infrastructure following strict hexagonal layering with dependency inversion. Enforces idiomatic Go style from Google, Uber, and Effective Go — covering naming, error handling, interfaces, concurrency, and testing patterns.
-license: MIT
+license: BSD-3-Clause
 compatibility: opencode
 metadata:
   language: golang

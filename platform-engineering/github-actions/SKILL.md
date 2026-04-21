@@ -1,7 +1,7 @@
 ---
 name: github-actions
 description: MUST USE when creating, reviewing, or modifying a GitHub Actions workflow (`.github/workflows/*.yml`), a composite or JavaScript action (`action.yml`), or any file under `.github/`. Use when the user asks to "write a workflow", "add a CI/CD pipeline", "fix a workflow", "add GHA caching", "make a reusable workflow", "enable OIDC to AWS/GCP/Azure", "set up build provenance / attestations", "require attested images", "secure my pipeline", or wires up any GitHub-hosted automation. Covers workflow syntax, contexts + expressions + variables, workflow commands + environment files, dependency caching (actions/cache@v4 + setup-* caches), artifact attestations (build provenance, SBOM, generic), SLSA Build L3 posture, enforcement via Sigstore policy-controller, OIDC cloud federation (replaces long-lived secrets), script-injection prevention, action SHA-pinning, least-privilege GITHUB_TOKEN, reusable workflows + composite actions, matrix + concurrency, environment protection rules, and self-hosted runner hygiene. Authored by a distinguished Platform Engineer — emphasizes fleet-scale governance, supply-chain security, and blast-radius control over one-off convenience.
-license: MIT
+license: BSD-3-Clause
 compatibility: opencode
 metadata:
   domain: platform-engineering
