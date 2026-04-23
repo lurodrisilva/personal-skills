@@ -20,6 +20,7 @@ A collection of **Claude Code skills** -- comprehensive reference guides that Cl
 | Skill | Platform | Focus | Key Technologies |
 |-------|----------|-------|------------------|
 | [github-actions](platform-engineering/github-actions/SKILL.md) | GitHub Actions | CI/CD governance, supply-chain security | Workflow syntax, OIDC federation, SHA-pinning, script-injection prevention, dependency caching, artifact attestations (SLSA Build L3), Sigstore policy-controller |
+| [addons-and-building-blocks](platform-engineering/addons-and-building-blocks/SKILL.md) | Kubernetes / AKS | Layered platform blueprints — baseline addons + reusable building blocks | Helm library charts (`myorg.*` / `plat-net.*`), OCI chart distribution (GHCR), ArgoCD App-of-Apps with sync waves, CloudNativePG, Crossplane managed resources, wrapper-chart helm-unittest, kubeconform, Terraform + Terratest AKS foundation |
 
 ## How It Works
 
