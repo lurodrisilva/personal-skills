@@ -1,10 +1,10 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-04-25 | Updated: 2026-04-25 -->
+<!-- Generated: 2026-04-25 | Updated: 2026-05-02 | DEEPINIT: 2026-05-02 -->
 
 # platform-engineering
 
 ## Purpose
-Infrastructure / DevOps / CI-CD / supply-chain skills — Claude Code / opencode auto-loads them when a project matches their description. Each subdirectory contains exactly one `SKILL.md`. **Important:** `scripts/validate-skills.sh` does *not* currently walk this directory, so frontmatter and fenced-block correctness here are enforced manually until the validator is extended (tracked follow-up in `CLAUDE.md`).
+Infrastructure / DevOps / CI-CD / supply-chain / observability skills — Claude Code / opencode auto-loads them when a project matches their description. Each subdirectory contains a `SKILL.md` (some also ship a companion expertise note alongside). **Important:** `scripts/validate-skills.sh` does *not* currently walk this directory, so frontmatter and fenced-block correctness here are enforced manually until the validator is extended (tracked follow-up in `CLAUDE.md`).
 
 ## Key Files
 None at this level — all content lives in subdirectories.
@@ -13,6 +13,7 @@ None at this level — all content lives in subdirectories.
 | Directory | Purpose |
 |-----------|---------|
 | `addons-and-building-blocks/` | Helm library charts + ArgoCD App-of-Apps + Crossplane / CNPG building blocks on AKS (see `addons-and-building-blocks/AGENTS.md`) |
+| `azure-pg-flex/` | Azure Postgres Flexible Server observability playbook — metrics two-layer model, headroom-vs-raw diagnostic doctrine, REST API surface, two log surfaces (Server Logs + Diagnostic Settings categories) (see `azure-pg-flex/AGENTS.md`) |
 | `github-actions/` | CI/CD governance — workflow syntax, OIDC federation, SHA-pinning, attestations / SLSA Build L3 (see `github-actions/AGENTS.md`) |
 | `wiremock-api-mocks/` | Shared cluster-wide WireMock mock server in `testing-system` namespace — stubs declared in consumer Helm values, registered via Admin API at install/upgrade (see `wiremock-api-mocks/AGENTS.md`) |
 
