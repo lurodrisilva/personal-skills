@@ -759,6 +759,49 @@ Intentionally none. Mocks are reproducible from consumer values. If consumer val
 - `requests: 100m / 256Mi` covers ~50 stubs × 100 RPS comfortably. Bump `limits.memory` if `--max-request-journal-entries` is increased.
 - Disable the request journal (`--no-request-journal`) under high load; re-enable only when actively debugging stub matches.
 
+#### Capacity planning under high-RPS load tests (≥1k RPS aggregate)
+
+The 1-replica / 100m-cpu defaults above hold for **test/preview-tier interactive RPS** (functional tests, smoke runs, occasional end-to-end suites). They do **not** hold when a consuming application runs **k6 / Locust / Gatling load tests at four-digit RPS or above** against the shared instance — at that point WireMock becomes a queueing layer in front of the consumer's real bottleneck and the failure mode is a textbook *bottleneck shift*.
+
+**The signature you will see** when a load test exceeds the WireMock fan-out budget:
+
+| Signal | Direction | Interpretation |
+|---|---|---|
+| Aggregate consumer RPS | **drops** below the offered arrival rate | k6 emits `Insufficient VUs` because requests pile up against WireMock |
+| Consumer p95 latency | **doubles or more** | Each request waits for a free WireMock thread/CPU slot in addition to the configured `fixedDelayMs` |
+| Real downstream metrics (DB CPU, downstream-service RPS) | **drop**, not climb | The consumer cannot feed the real downstream because it is itself queueing |
+| WireMock pod CPU | **near `limits.cpu`** for the duration of the peak | This is the choke point; verify with `kubectl top pod` during the run |
+| WireMock pod count | unchanged at 1 | Single instance is not horizontally absorbing the fan-out |
+
+**The math** to size before the run:
+
+```
+sustained_outbound_rps   = consumer_replicas_at_peak × per_pod_outbound_rate
+required_wiremock_cpu_ms = sustained_outbound_rps × per_request_cpu_cost_ms
+required_wiremock_cores  = required_wiremock_cpu_ms / 1000
+```
+
+Empirically, a `wiremock/wiremock:3-alpine` instance serving stubs with `fixedDelayMs > 0` costs **~0.2–0.5 ms of CPU per request** on Standard_D-series VMs (the bulk of the 300 ms / 500 ms latency is the artificial delay, *not* CPU). Add 30 % headroom. So for ~5 k outbound RPS you need ~2.5–3 cores of WireMock, which the platform default of 1 replica × 100 m / 250 m cannot provide.
+
+**Two acceptable sizing modes for load tests** — pick one explicitly per environment:
+
+1. **Scale the shared instance temporarily** in the values file used for the load-test environment:
+   ```yaml
+   # values-loadtest.yaml — only for environments where high-RPS load tests run
+   wiremock:
+     replicaCount: 4               # NOT the platform default
+     resources:
+       requests: { cpu: 500m, memory: 384Mi }
+       limits:   { cpu: 1000m, memory: 768Mi }
+   ```
+   Multi-replica is acceptable here because **load-test stubs are stateless** (no scenarios, no in-memory counters) — the sticky-session caveat in the platform default does not apply to a load-test stub catalog. Document this exception in the env's values file so a future reader does not "fix" it back to 1 replica.
+
+2. **Take WireMock out of the load-test request path entirely** — point the consumer at a dedicated, tightly-scoped per-namespace WireMock for the duration of the load test, OR mock the dependency at a different layer (e.g. an in-process `WireMock.Net` if the test runs an embedded HTTP target). Treat the shared `testing-system/wiremock` as off-limits for any test pulling >100 RPS through it.
+
+**Anti-pattern**: removing or lowering `fixedDelayMs` to "fix" the latency without resizing capacity. This hides the bottleneck instead of moving it; the consumer's latency drops but the test no longer simulates realistic external-API behaviour, and the next load profile that adds back delay re-creates the problem.
+
+**Recognition rule for "we just hit the WireMock wall"** — *consumer's downstream metrics (real DB, real cache) drop while consumer p95 climbs after an HPA scale-out event*. The classical "raise pod count → push DB harder" loop instead pushes WireMock harder, because the app tier just got wide enough to *saturate the mock* before it could saturate the DB. Always verify WireMock CPU during the next run before adjusting any other dial.
+
 ---
 
 ## VALIDATION GATES

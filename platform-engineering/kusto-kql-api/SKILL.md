@@ -705,6 +705,7 @@ AppMetrics
 | Writing the same complex subquery twice in a `union` or `join` | Computed twice | Wrap in `let` + `materialize()` |
 | Hand-rolling against `/v2/rest/query` when an SDK exists | Re-implementing token refresh, frame parsing, retries | Use `Microsoft.Azure.Kusto.Data` / `azure-kusto-data` / `azure-monitor-query` |
 | Treating Log Analytics like raw ADX | Different endpoint (`/v1/workspaces/{id}/query`), v1-style response, different audience | Use the v1 path or use `azure-monitor-query` SDK |
+| Filtering App Insights `AppRoleName == "<service>"` against a workspace fed by the **.NET OpenTelemetry distro** (`Azure.Monitor.OpenTelemetry.Exporter`) | The exporter packs `service.namespace` + `service.name` as `"[<namespace>]/<service>"` (e.g. `"[hex-scaffold]/Hex.Scaffold"`), not the bare service name. `==` returns 0 rows silently; you conclude telemetry is broken when it is just routed under a different role string | Confirm the exact string first — `AppRequests \| summarize cnt=count() by AppRoleName \| order by cnt desc \| take 10` — then filter `where AppRoleName startswith "[<namespace>]"`, or `has "<namespace>"` for token-indexed scans. Same gotcha applies to `AppDependencies`, `AppExceptions`, and any cross-table join that filters on `AppRoleName` |
 
 ---
 
