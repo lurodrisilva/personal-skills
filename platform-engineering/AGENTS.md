@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-04-25 | Updated: 2026-05-03 | DEEPINIT: 2026-05-03 -->
+<!-- Generated: 2026-04-25 | Updated: 2026-05-04 | DEEPINIT: 2026-05-04 -->
 
 # platform-engineering
 
@@ -13,6 +13,7 @@ None at this level — all content lives in subdirectories.
 | Directory | Purpose |
 |-----------|---------|
 | `addons-and-building-blocks/` | Helm library charts + ArgoCD App-of-Apps + Crossplane / CNPG building blocks on AKS (see `addons-and-building-blocks/AGENTS.md`) |
+| `azure-cosmosdb-mongo-vcore/` | Cosmos DB for MongoDB vCore expertise notes — `dns-zone-group show` exit-0-on-missing CLI bug, SRV-not-A `mongocluster.cosmos.azure.com` TCP-probe trap, M30+ HA tier minimum (see `azure-cosmosdb-mongo-vcore/AGENTS.md`) |
 | `azure-pg-flex/` | Azure Postgres Flexible Server observability playbook — metrics two-layer model, headroom-vs-raw diagnostic doctrine, REST API surface, two log surfaces (Server Logs + Diagnostic Settings categories) (see `azure-pg-flex/AGENTS.md`) |
 | `github-actions/` | CI/CD governance — workflow syntax, OIDC federation, SHA-pinning, attestations / SLSA Build L3 (see `github-actions/AGENTS.md`) |
 | `kusto-kql-api/` | Kusto / KQL telemetry-query API playbook — five REST endpoints, four service-specific base URLs, v1-vs-v2 response frames, the "200 OK with errors in body" trap, `innerunique` join trap, standalone `Microsoft.Azure.Kusto.Language` parser for CI gates (see `kusto-kql-api/AGENTS.md`) |
