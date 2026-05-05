@@ -227,10 +227,14 @@ spec:
   roles:
     - controller
   storage:
-    type: persistent-claim
-    size: 20Gi
-    class: managed-csi-premium      # Azure Premium SSD v2 (perf-grade)
-    deleteClaim: false
+    type: jbod
+    volumes:
+      - id: 0
+        type: persistent-claim
+        size: 20Gi
+        class: managed-csi-premium  # Azure Premium SSD v2 (perf-grade)
+        deleteClaim: false
+        kraftMetadata: shared       # tag the controller's volume as the KRaft metadata carrier
   resources:
     requests:
       cpu: 500m
@@ -276,6 +280,7 @@ spec:
         size: 500Gi
         class: managed-csi-premium
         deleteClaim: false
+        kraftMetadata: shared    # tag ONE volume per node as the KRaft metadata carrier (1.0.0+)
   resources:
     requests:
       cpu: "4"
@@ -317,8 +322,8 @@ metadata:
     strimzi.io/kraft: enabled
 spec:
   kafka:
-    version: "4.0"
-    metadataVersion: "4.0-IV0"        # pin to the floor of 4.0; bump deliberately after verifying against Strimzi changelog
+    version: "4.2.0"                  # current Kafka version shipped with Strimzi 1.0.0
+    metadataVersion: "4.2-IV1"        # the metadata version paired with 4.2.0 in the 1.0.0 examples
     listeners:
       - name: plain
         port: 9092
@@ -515,7 +520,7 @@ Cruise Control reads JMX metrics from every broker, builds a workload model, and
 | `full` (default) | rebalance the whole cluster against goals |
 | `add-brokers` (with `spec.brokers: [N, N+1, ...]`) | after scaling up `KafkaNodePool.spec.replicas` |
 | `remove-brokers` (with `spec.brokers: [...]`) | before scaling down |
-| `rebalance-disks` | re-spread partitions across `jbod` volumes inside each broker (no inter-broker move) |
+| `remove-disks` (with `moveReplicasOffVolumes: [{ brokerId, volumeIds }]`) | drain replicas off specific JBOD volumes prior to volume removal — replaces the older `rebalance-disks` mode in 1.0.0 |
 
 ### Lifecycle
 
@@ -793,6 +798,467 @@ The `cruiseControl.brokerCapacity` numbers in the perf tier overlay (`tests/load
 
 ---
 
+## REFERENCE EXAMPLES FROM STRIMZI 1.0.0
+
+The patterns below are transcribed from the **upstream `examples/` directory at the [`1.0.0` tag](https://github.com/strimzi/strimzi-kafka-operator/tree/1.0.0/examples)**. They are the minimum-viable shapes the Cluster Operator accepts; production deployments still need the resource limits, JVM tuning, rack awareness, and `brokerCapacity` covered earlier in this skill. **Use these as the canonical schema reference and bolt the perf-grade overlays from this skill on top.**
+
+### Canonical KRaft cluster — split node pools, persistent JBOD
+
+Source: `examples/kafka/kafka-persistent.yaml`. Shows the **two-CR-plus-cluster** pattern that is mandatory in 1.0.0+. Note `kraftMetadata: shared` on the volume that carries the KRaft metadata log — required when storage is `jbod`.
+
+```yaml
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaNodePool
+metadata:
+  name: controller
+  labels:
+    strimzi.io/cluster: my-cluster
+spec:
+  replicas: 3
+  roles: [controller]
+  storage:
+    type: jbod
+    volumes:
+      - id: 0
+        type: persistent-claim
+        size: 100Gi
+        kraftMetadata: shared
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaNodePool
+metadata:
+  name: broker
+  labels:
+    strimzi.io/cluster: my-cluster
+spec:
+  replicas: 3
+  roles: [broker]
+  storage:
+    type: jbod
+    volumes:
+      - id: 0
+        type: persistent-claim
+        size: 100Gi
+        kraftMetadata: shared
+---
+apiVersion: kafka.strimzi.io/v1
+kind: Kafka
+metadata:
+  name: my-cluster
+spec:
+  kafka:
+    version: 4.2.0
+    metadataVersion: 4.2-IV1
+    listeners:
+      - { name: plain, port: 9092, type: internal, tls: false }
+      - { name: tls,   port: 9093, type: internal, tls: true  }
+    config:
+      offsets.topic.replication.factor: 3
+      transaction.state.log.replication.factor: 3
+      transaction.state.log.min.isr: 2
+      default.replication.factor: 3
+      min.insync.replicas: 2
+  entityOperator:
+    topicOperator: {}
+    userOperator: {}
+```
+
+### Multi-volume JBOD broker
+
+Source: `examples/kafka/kafka-jbod.yaml`. Two volumes per broker — `kraftMetadata: shared` MUST stay on exactly one. Pair with `KafkaRebalance.mode: remove-disks` for safe volume drain.
+
+```yaml
+spec:
+  replicas: 3
+  roles: [broker]
+  storage:
+    type: jbod
+    volumes:
+      - id: 0
+        type: persistent-claim
+        size: 100Gi
+        kraftMetadata: shared    # KRaft metadata lives here
+      - id: 1
+        type: persistent-claim
+        size: 100Gi              # additional log capacity
+```
+
+### Combined-role nodes — DEV ONLY
+
+Source: `examples/kafka/kafka-with-dual-role-nodes.yaml`. Single pool, `roles: [controller, broker]`, three replicas. **Forbidden for any cluster that will be perf-tested or run in prod** — controller I/O contaminates broker CPU saturation readings.
+
+### Cruise Control — minimal vs goals-tuned
+
+Source: `examples/cruise-control/kafka-cruise-control.yaml` shows the absolute minimum: **`cruiseControl: {}`**. The operator deploys CC with defaults. Add `brokerCapacity` (per the API contract earlier in this skill) before using CC for serious capacity planning — the empty form lets CC operate with internal defaults that may not reflect your real broker capacity.
+
+Source: `examples/cruise-control/kafka-cruise-control-with-goals.yaml` — explicit goal lists. Keys go under `spec.cruiseControl.config`:
+
+```yaml
+cruiseControl:
+  config:
+    # `goals` MUST be a superset of `default.goals`, which MUST be a superset of `hard.goals`.
+    goals: >
+      com.linkedin.kafka.cruisecontrol.analyzer.goals.RackAwareGoal,
+      com.linkedin.kafka.cruisecontrol.analyzer.goals.MinTopicLeadersPerBrokerGoal,
+      com.linkedin.kafka.cruisecontrol.analyzer.goals.ReplicaCapacityGoal,
+      com.linkedin.kafka.cruisecontrol.analyzer.goals.DiskCapacityGoal,
+      com.linkedin.kafka.cruisecontrol.analyzer.goals.NetworkInboundCapacityGoal,
+      com.linkedin.kafka.cruisecontrol.analyzer.goals.NetworkOutboundCapacityGoal,
+      com.linkedin.kafka.cruisecontrol.analyzer.goals.CpuCapacityGoal,
+      com.linkedin.kafka.cruisecontrol.analyzer.goals.ReplicaDistributionGoal,
+      com.linkedin.kafka.cruisecontrol.analyzer.goals.PotentialNwOutGoal,
+      com.linkedin.kafka.cruisecontrol.analyzer.goals.DiskUsageDistributionGoal,
+      com.linkedin.kafka.cruisecontrol.analyzer.goals.NetworkInboundUsageDistributionGoal,
+      com.linkedin.kafka.cruisecontrol.analyzer.goals.NetworkOutboundUsageDistributionGoal,
+      com.linkedin.kafka.cruisecontrol.analyzer.goals.CpuUsageDistributionGoal,
+      com.linkedin.kafka.cruisecontrol.analyzer.goals.TopicReplicaDistributionGoal,
+      com.linkedin.kafka.cruisecontrol.analyzer.goals.LeaderReplicaDistributionGoal,
+      com.linkedin.kafka.cruisecontrol.analyzer.goals.LeaderBytesInDistributionGoal,
+    default.goals: >
+      com.linkedin.kafka.cruisecontrol.analyzer.goals.RackAwareGoal,
+      com.linkedin.kafka.cruisecontrol.analyzer.goals.ReplicaCapacityGoal,
+      com.linkedin.kafka.cruisecontrol.analyzer.goals.DiskCapacityGoal
+    hard.goals: >
+      com.linkedin.kafka.cruisecontrol.analyzer.goals.RackAwareGoal,
+      com.linkedin.kafka.cruisecontrol.analyzer.goals.ReplicaCapacityGoal,
+      com.linkedin.kafka.cruisecontrol.analyzer.goals.DiskCapacityGoal
+```
+
+The **superset rule** is invariant: `goals ⊇ default.goals ⊇ hard.goals`. Cruise Control rejects an inconsistent config silently in some versions — assert it in CI.
+
+### Auto-rebalance via `KafkaRebalance` templates (1.0.0+)
+
+Source: `examples/cruise-control/kafka-cruise-control-auto-rebalancing.yaml`. New in recent Strimzi: link broker scale-up/down events to pre-declared `KafkaRebalance` template resources (annotated `strimzi.io/rebalance-template: "true"`). The operator clones the template into a real `KafkaRebalance` whenever brokers are added or removed.
+
+```yaml
+spec:
+  cruiseControl:
+    autoRebalance:
+      - mode: add-brokers
+        template:
+          name: my-add-brokers-rebalancing-template
+      - mode: remove-brokers
+        template:
+          name: my-remove-brokers-rebalancing-template
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaRebalance
+metadata:
+  name: my-add-brokers-rebalancing-template
+  labels:
+    strimzi.io/cluster: my-cluster
+  annotations:
+    strimzi.io/rebalance-template: "true"
+spec: {}    # empty body → uses default goals
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaRebalance
+metadata:
+  name: my-remove-brokers-rebalancing-template
+  labels:
+    strimzi.io/cluster: my-cluster
+  annotations:
+    strimzi.io/rebalance-template: "true"
+spec: {}
+```
+
+**Why this matters for perf testing.** When you scale brokers up or down between tier-ladder runs, auto-rebalance removes the manual "approve KafkaRebalance, wait for ProposalReady, annotate to execute" dance. The cluster heals itself between runs.
+
+### `KafkaRebalance` modes — verbatim from 1.0.0 examples
+
+```yaml
+# examples/cruise-control/kafka-rebalance-full.yaml
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaRebalance
+metadata:
+  name: my-rebalance
+  labels: { strimzi.io/cluster: my-cluster }
+spec:
+  mode: full
+```
+
+```yaml
+# examples/cruise-control/kafka-rebalance-add-brokers.yaml
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaRebalance
+metadata:
+  name: my-rebalance
+  labels: { strimzi.io/cluster: my-cluster }
+spec:
+  mode: add-brokers
+  brokers: [3, 4]
+```
+
+```yaml
+# examples/cruise-control/kafka-rebalance-remove-disks.yaml
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaRebalance
+metadata:
+  name: my-rebalance
+  labels: { strimzi.io/cluster: my-cluster }
+spec:
+  mode: remove-disks
+  moveReplicasOffVolumes:
+    - brokerId: 0
+      volumeIds: [1]
+```
+
+```yaml
+# examples/cruise-control/kafka-rebalance-with-goals.yaml
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaRebalance
+metadata:
+  name: my-rebalance
+  labels: { strimzi.io/cluster: my-cluster }
+spec:
+  goals:
+    - CpuCapacityGoal
+    - NetworkInboundCapacityGoal
+    - DiskCapacityGoal
+    - RackAwareGoal
+    - MinTopicLeadersPerBrokerGoal
+    - NetworkOutboundCapacityGoal
+    - ReplicaCapacityGoal
+```
+
+**Naming asymmetry — confirmed by the 1.0.0 examples.** `cruiseControl.config.{goals, default.goals, hard.goals}` use **fully-qualified class names** (`com.linkedin.kafka.cruisecontrol.analyzer.goals.RackAwareGoal`). `KafkaRebalance.spec.goals` accepts the **short names** (`RackAwareGoal`). These two surfaces are not interchangeable — never copy-paste between them.
+
+### Metrics — JMX exporter ConfigMap pattern + `kafkaExporter`
+
+Source: `examples/metrics/kafka-metrics.yaml` shows the canonical wiring. Two new things vs the simpler example earlier in this skill:
+
+1. **`kafkaExporter`** — a sidecar that emits topic / consumer-group lag metrics on its own. Cheap to add, invaluable during perf testing for spotting consumer-lag explosion.
+2. The JMX exporter rules block — copy verbatim, don't roll your own.
+
+```yaml
+spec:
+  kafka:
+    metricsConfig:
+      type: jmxPrometheusExporter
+      valueFrom:
+        configMapKeyRef:
+          name: kafka-metrics
+          key: kafka-metrics-config.yml
+  kafkaExporter:
+    topicRegex: ".*"
+    groupRegex: ".*"
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: kafka-metrics
+  labels: { app: strimzi }
+data:
+  kafka-metrics-config.yml: |
+    lowercaseOutputName: true
+    rules:
+      - pattern: kafka.server<type=(.+), name=(.+), clientId=(.+), topic=(.+), partition=(.*)><>Value
+        name: kafka_server_$1_$2
+        type: GAUGE
+        labels:
+          clientId: "$3"
+          topic: "$4"
+          partition: "$5"
+      - pattern: kafka.server<type=(.+), name=(.+), clientId=(.+), brokerHost=(.+), brokerPort=(.+)><>Value
+        name: kafka_server_$1_$2
+        type: GAUGE
+        labels:
+          clientId: "$3"
+          broker: "$4:$5"
+      - pattern: "kafka.server<type=raft-metrics><>(.+-total|.+-max):"
+        name: kafka_server_raftmetrics_$1
+        type: COUNTER
+      - pattern: "kafka.server<type=raft-metrics><>(current-state): (.+)"
+        name: kafka_server_raftmetrics_$1
+        value: 1
+        type: UNTYPED
+        labels:
+          $1: "$2"
+```
+
+Cruise Control gets its own minimal ConfigMap — source `examples/metrics/kafka-cruise-control-metrics.yaml`:
+
+```yaml
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: cruise-control-metrics
+  labels: { app: strimzi }
+data:
+  metrics-config.yml: |
+    lowercaseOutputName: true
+    rules:
+      - pattern: kafka.cruisecontrol<name=(.+)><>(\w+)
+        name: kafka_cruisecontrol_$1_$2
+        type: GAUGE
+```
+
+### KafkaUser — TLS auth + ACLs (verbatim 1.0.0 shape)
+
+Source: `examples/user/kafka-user.yaml`. Note the tripartite ACL split: consumer needs `topic` + `group` rules; producer needs `topic` + `Create`/`Write`. **Quotas are intentionally absent in the upstream example** — same rule applies in this skill: quotas off during synthetic perf measurement.
+
+```yaml
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaUser
+metadata:
+  name: my-user
+  labels: { strimzi.io/cluster: my-cluster }
+spec:
+  authentication: { type: tls }
+  authorization:
+    type: simple
+    acls:
+      # Consumer: topic Describe+Read, group Read
+      - resource: { type: topic, name: my-topic, patternType: literal }
+        operations: [Describe, Read]
+        host: "*"
+      - resource: { type: group, name: my-group, patternType: literal }
+        operations: [Read]
+        host: "*"
+      # Producer: topic Create+Describe+Write
+      - resource: { type: topic, name: my-topic, patternType: literal }
+        operations: [Create, Describe, Write]
+        host: "*"
+```
+
+### KafkaTopic — minimum form (verbatim)
+
+Source: `examples/topic/kafka-topic.yaml`. The 1.0.0 example is **deliberately minimal** — single partition, single replica, two-hour retention, 1 GiB segments. **Do not copy the partition/replica numbers for prod or perf** — they're a starting placeholder, not a recommendation. Use the perf-test sizing rule from this skill (`partitions ≥ 2 × consumer-fleet CPU cores`, `replicas: 3`, `min.insync.replicas: 2`).
+
+```yaml
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaTopic
+metadata:
+  name: my-topic
+  labels: { strimzi.io/cluster: my-cluster }
+spec:
+  partitions: 1
+  replicas: 1
+  config:
+    retention.ms: 7200000        # 2 hours
+    segment.bytes: 1073741824    # 1 GiB
+```
+
+### KafkaConnect — bootstrap + image-build
+
+Source: `examples/connect/kafka-connect.yaml` and `kafka-connect-build.yaml`. The base `KafkaConnect` always references the broker's TLS bootstrap and the cluster CA secret; `replication.factor: -1` lets each Connect storage topic inherit the broker default rather than hardcoding.
+
+```yaml
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaConnect
+metadata:
+  name: my-connect-cluster
+  # Uncomment to drive connectors via KafkaConnector CRs (no REST API)
+  # annotations:
+  #   strimzi.io/use-connector-resources: "true"
+spec:
+  version: 4.2.0
+  replicas: 1
+  bootstrapServers: my-cluster-kafka-bootstrap:9093
+  groupId: my-connect-group
+  configStorageTopic: my-connect-configs
+  statusStorageTopic: my-connect-status
+  offsetStorageTopic: my-connect-offsets
+  tls:
+    trustedCertificates:
+      - secretName: my-cluster-cluster-ca-cert
+        pattern: "*.crt"
+  config:
+    config.storage.replication.factor: -1     # inherit broker default
+    offset.storage.replication.factor: -1
+    status.storage.replication.factor: -1
+```
+
+To bake plugins into a derived image, add a `build` block — Strimzi materialises a Dockerfile and pushes the result to your registry:
+
+```yaml
+spec:
+  # ... base spec as above ...
+  build:
+    output:
+      type: docker
+      image: ttl.sh/strimzi-connect-example-4.2.0:24h
+    plugins:
+      - name: kafka-connect-file
+        artifacts:
+          - type: maven
+            group: org.apache.kafka
+            artifact: connect-file
+            version: 4.2.0
+```
+
+### KafkaMirrorMaker2 — 1.0.0 shape (top-level `target` + per-mirror `source`)
+
+Source: `examples/mirror-maker/kafka-mirror-maker-2.yaml`. The 1.0.0 layout is **`target` at the top level** and each `mirrors[]` entry carrying its own `source` block — clearer than the older `clusters[]` pattern.
+
+```yaml
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaMirrorMaker2
+metadata:
+  name: my-mirror-maker-2
+spec:
+  version: 4.2.0
+  replicas: 1
+  target:
+    alias: cluster-b
+    bootstrapServers: cluster-b-kafka-bootstrap:9092
+    groupId: my-mirror-maker-2-group
+    configStorageTopic: my-mirror-maker-2-config
+    offsetStorageTopic: my-mirror-maker-2-offset
+    statusStorageTopic: my-mirror-maker-2-status
+    config:
+      config.storage.replication.factor: -1
+      offset.storage.replication.factor: -1
+      status.storage.replication.factor: -1
+  mirrors:
+    - source:
+        bootstrapServers: cluster-a-kafka-bootstrap:9092
+        alias: cluster-a
+      sourceConnector:
+        tasksMax: 1
+        config:
+          replication.factor: -1
+          offset-syncs.topic.replication.factor: -1
+          sync.topic.acls.enabled: "false"
+          refresh.topics.interval.seconds: 600
+      checkpointConnector:
+        tasksMax: 1
+        config:
+          checkpoints.topic.replication.factor: -1
+          sync.group.offsets.enabled: "false"
+          refresh.groups.interval.seconds: 600
+      topicsPattern: ".*"
+      groupsPattern: ".*"
+```
+
+### KafkaBridge — minimum form
+
+Source: `examples/bridge/kafka-bridge.yaml`. The upstream example is **deliberately tiny** — replicas, bootstrapServers, http.port. No CORS, no consumer/producer config block. Add those only when a specific consumer or test fixture demands it.
+
+```yaml
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaBridge
+metadata:
+  name: my-bridge
+spec:
+  replicas: 1
+  bootstrapServers: my-cluster-kafka-bootstrap:9092
+  http:
+    port: 8080
+```
+
+### What's NOT in the 1.0.0 examples (and why it matters)
+
+- **No `brokerCapacity` populated** — even the CC examples use `cruiseControl: {}` or only `cruiseControl.config.*`. The schema absolutely supports `brokerCapacity` (verified against the `BrokerCapacity` Java class on `main`); the upstream just doesn't bother for didactic minimality. **Always populate `brokerCapacity` for any cluster that will be perf-tested.**
+- **No `resources` blocks on the `KafkaNodePool`s** — so the upstream pods are `BestEffort` QoS, throttleable, unsuited for measurement. **Always set `requests == limits` for perf clusters.**
+- **No `rack` block** — examples are single-zone. **Add `spec.kafka.rack.topologyKey: topology.kubernetes.io/zone` for any multi-zone cluster.**
+- **No `metricsConfig` on the controller pool** — only on the broker tier and on Cruise Control. Controllers in KRaft mode are quiet relative to brokers; if you want metadata-quorum metrics, add JMX scraping to the controller pool too.
+- **`replicas: 1` on Connect / MirrorMaker2 / Bridge** — fine for a smoke example, **never for prod**. Production: ≥ 2 replicas with anti-affinity.
+
+The 1.0.0 examples are **schema reference**, not **deployment reference**. This skill is the deployment reference.
+
+---
+
 ## ANTI-PATTERNS
 
 | Anti-pattern | Why it breaks |
@@ -811,6 +1277,8 @@ The `cruiseControl.brokerCapacity` numbers in the perf tier overlay (`tests/load
 | Skipping `KafkaRebalance` after broker scale-out | hot brokers carry skewed leadership; perf measures imbalance, not capacity |
 | `PodDisruptionBudget` missing or `maxUnavailable: 0` | drain stalls forever or evicts brokers unsafely (depending on Drain Cleaner) |
 | Auto-create topics on (`auto.create.topics.enable: true`) on a `KafkaTopic`-managed cluster | drift between Kafka state and CR state — operator constantly fights you |
+| `jbod` storage with no volume tagged `kraftMetadata: shared` | KRaft metadata log has no home — operator rejects the spec or behaviour is undefined on upgrade |
+| `KafkaRebalance.spec.mode: rebalance-disks` (legacy form) | renamed in 1.0.0 — use `mode: remove-disks` with `moveReplicasOffVolumes: [{ brokerId, volumeIds }]` |
 | Manual `kafka-topics --alter` on a Topic-Operator-managed cluster | unidirectional Topic Operator overwrites the change on next reconcile |
 | Cluster Operator `replicas: 1` for non-toy environments | operator-down window causes reconciliation outages during rolling updates |
 | Cruise Control disabled on multi-broker clusters | manual rebalance is the only way to recover from skew → high MTTR |
