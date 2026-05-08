@@ -108,15 +108,15 @@ Markdown content with architecture rules, patterns, and code examples.
 
 ### Validation Checks
 
-The CI pipeline runs on every push to `master` and every pull request:
+The CI pipeline runs on every push to `master` and every pull request, validating every `SKILL.md` under both `coding/` and `platform-engineering/`:
 
-- Every directory under `coding/` must contain a `SKILL.md`
+- Every directory under each domain must contain a `SKILL.md` (or, as a learner-friendly exception, one or more `*-expertise.md` / `*-workflow.md` notes)
 - Frontmatter must be valid YAML with all required fields (`name`, `description`, `license`, `compatibility`, `metadata`)
 - `metadata` must be a non-empty map
 - Markdown body after frontmatter must be non-empty
 - Fenced code blocks must be balanced (even number of ` ``` ` markers)
 
-> **Note:** the current validator (`scripts/validate-skills.sh`) only walks `coding/`. `platform-engineering/` SKILL.md files are not yet validated by CI -- expanding the validator to cover all domain directories is a tracked follow-up.
+To extend coverage to a new top-level domain, add the directory name to the `DOMAIN_DIRS` array at the top of `scripts/validate-skills.sh`.
 
 ## License
 
