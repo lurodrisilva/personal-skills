@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-04-25 | Updated: 2026-05-04 | DEEPINIT: 2026-05-04 -->
+<!-- Generated: 2026-04-25 | Updated: 2026-05-24 | DEEPINIT: 2026-05-24 -->
 
 # platform-engineering
 
@@ -13,10 +13,15 @@ None at this level — all content lives in subdirectories.
 | Directory | Purpose |
 |-----------|---------|
 | `addons-and-building-blocks/` | Helm library charts + ArgoCD App-of-Apps + Crossplane / CNPG building blocks on AKS (see `addons-and-building-blocks/AGENTS.md`) |
+| `auth0-kong-authZ-authN/` | Kong API Gateway + Auth0 OIDC edge authN/authZ — `openid-connect` plugin, JWKS-not-introspection, `audience`-pinned tokens, KIC + Ingress and KGO + Gateway API paths (see `auth0-kong-authZ-authN/AGENTS.md`) |
+| `aws-cli/` | AWS CLI v2 — command structure, two-file config model, credential resolution, JMESPath `--query`, `file://` vs `fileb://`, pagination + waiters, SSO / IRSA / OIDC over long-lived keys (see `aws-cli/AGENTS.md`) |
 | `azure-cosmosdb-mongo-vcore/` | Cosmos DB for MongoDB vCore expertise notes — `dns-zone-group show` exit-0-on-missing CLI bug, SRV-not-A `mongocluster.cosmos.azure.com` TCP-probe trap, M30+ HA tier minimum (see `azure-cosmosdb-mongo-vcore/AGENTS.md`) |
 | `azure-pg-flex/` | Azure Postgres Flexible Server observability playbook — metrics two-layer model, headroom-vs-raw diagnostic doctrine, REST API surface, two log surfaces (Server Logs + Diagnostic Settings categories) (see `azure-pg-flex/AGENTS.md`) |
+| `azure-retail-prices/` | Azure Retail Prices REST API — anonymous commercial-cloud-only endpoint, paginate to `NextPageLink === null`, USD-only billing reconciliation, case-sensitive `$filter` on `2023-01-01-preview` (see `azure-retail-prices/AGENTS.md`) |
 | `github-actions/` | CI/CD governance — workflow syntax, OIDC federation, SHA-pinning, attestations / SLSA Build L3 (see `github-actions/AGENTS.md`) |
-| `kafka-strimzi-operator/` | Apache Kafka on Kubernetes via the Strimzi operator — KRaft-only role-split `KafkaNodePool`s, the verbatim `BrokerCapacity` API contract, Cruise Control rebalance modes, perf-test playbook against the four limiting resources (CPU / network-in / network-out / log disk), `Hex.Scaffold` consumer/producer integration notes |
+| `helm-chart-packages/` | Helm chart authoring + supply chain — Chart.yaml v2 contract, SemVer, standard labels, CRDs in `crds/`, signed packages + OCI `@sha256:` digest pinning (see `helm-chart-packages/AGENTS.md`) |
+| `kafka-load-test/` | Load testing Kafka + Kafka-driven services — paired-tool methodology (`perf-test.sh` broker baseline + `k6 + xk6-kafka` headline), four-quadrant watch list, first-breach stop conditions (see `kafka-load-test/AGENTS.md`) |
+| `kafka-strimzi-operator/` | Apache Kafka on Kubernetes via the Strimzi operator — KRaft-only role-split `KafkaNodePool`s, the verbatim `BrokerCapacity` API contract, Cruise Control rebalance modes, perf-test playbook against the four limiting resources (CPU / network-in / network-out / log disk), `Hex.Scaffold` consumer/producer integration notes (see `kafka-strimzi-operator/AGENTS.md`) |
 | `kusto-kql-api/` | Kusto / KQL telemetry-query API playbook — five REST endpoints, four service-specific base URLs, v1-vs-v2 response frames, the "200 OK with errors in body" trap, `innerunique` join trap, standalone `Microsoft.Azure.Kusto.Language` parser for CI gates (see `kusto-kql-api/AGENTS.md`) |
 | `wiremock-api-mocks/` | Shared cluster-wide WireMock mock server in `testing-system` namespace — stubs declared in consumer Helm values, registered via Admin API at install/upgrade (see `wiremock-api-mocks/AGENTS.md`) |
 

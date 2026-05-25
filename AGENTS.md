@@ -1,4 +1,4 @@
-<!-- Generated: 2026-04-25 | Updated: 2026-04-25 -->
+<!-- Generated: 2026-04-25 | Updated: 2026-05-24 | DEEPINIT: 2026-05-24 -->
 
 # personal-skills
 
@@ -17,8 +17,9 @@ Distribution repository for **Claude Code / opencode skills**. Each leaf directo
 | Directory | Purpose |
 |-----------|---------|
 | `coding/` | Application-development skills — language, framework, build-tooling guidance (see `coding/AGENTS.md`) |
-| `platform-engineering/` | Infrastructure, DevOps, CI/CD, supply-chain skills (see `platform-engineering/AGENTS.md`) |
+| `platform-engineering/` | Infrastructure, DevOps, CI/CD, supply-chain, observability skills (see `platform-engineering/AGENTS.md`) |
 | `scripts/` | Local + CI validation tooling for SKILL.md (see `scripts/AGENTS.md`) |
+| `omc-learned/` | Single-insight expertise notes captured by `/oh-my-claudecode:learner` — staging ground for future SKILL.md promotion; not loaded by validator (see `omc-learned/AGENTS.md`) |
 | `.github/workflows/` | CI workflow that runs `scripts/validate-skills.sh` on every push and PR |
 
 ## For AI Agents
