@@ -1,6 +1,6 @@
 ---
 name: auth0-kong-authz-authn
-description: 'MUST USE when authoring, reviewing, debugging, or migrating **authentication and authorization at a Kong API Gateway fronted by Auth0 as the OIDC Identity Provider** — covers the Kong Gateway Enterprise `openid-connect` plugin against Auth0 tenants, the nine credential search modes (`session`, `bearer`, `introspection`, `userinfo`, `kong_oauth2`, `refresh_token`, `password`, `client_credentials`, `authorization_code`), Auth0-specific quirks (the `audience` parameter on `/authorize` and `/oauth/token` to mint API-scoped JWTs instead of opaque tokens, the `https://<tenant>.<region>.auth0.com/` issuer trailing-slash trap, custom domains for first-party auth, the M2M client-credentials grant vs the interactive Universal Login flow, RS256-only signing for production, Auth0 Actions/Rules adding custom claims under a namespaced URI), the four Auth0 application types (SPA, Regular Web App, Native, Machine-to-Machine), Auth0 APIs (Resource Server identifiers used as `audience`), Auth0 connections (database, social, enterprise SAML/OIDC, passwordless) and how they are surfaced to Kong via the `acr`/`amr`/`connection` claims, scopes (`openid profile email` plus API permissions), RBAC via Auth0 roles/permissions claims, JWKS discovery (`/.well-known/jwks.json`), token introspection caveats (Auth0 does NOT implement RFC 7662 for JWTs — use signature verification via JWKS instead), refresh-token rotation, RFC 6750 bearer header, logout via `/v2/logout?client_id=&returnTo=`, mapping Auth0 `sub` / `email` / `azp` / custom claims to Kong Consumers (`consumer_claims`, `consumer_by`, `credential_claim`), `anonymous` fallback consumers for tiered access, claim-based authorization (`scopes_required`, `groups_required`, `roles_required`, `audience_required`, `issuers_allowed`), upstream header injection (`upstream_access_token_header`, `upstream_headers_claims`) so backend services receive the verified identity, session storage choices (cookie vs Redis cluster for HA), PKCE enforcement, mTLS client auth for FAPI, KongPlugin CRD via Kong Ingress Controller, declarative `kong.yaml` via decK, Konnect control-plane config, and Terraform via the `kong/konnect` provider, AND **Kong Gateway Operator (KGO)** with upstream **Gateway API** resources (`GatewayClass`, `Gateway`, `HTTPRoute`, `GRPCRoute`, `ReferenceGrant`) — the operator-managed `GatewayConfiguration`, `DataPlane`, `ControlPlane`, `KonnectExtension`, `KonnectAPIAuthConfiguration`, `KongPlugin`, `KongClusterPlugin`, `KongConsumer`, `KongPluginBinding`, `KongReferenceGrant`, `KongLicense`, `KongVault` CRDs, the `konghq.com/plugins` annotation as the HTTPRoute→KongPlugin binding mechanism, plugin scope precedence (Gateway → Service → HTTPRoute → Consumer), the migration path from KIC + `Ingress` to KGO + `HTTPRoute`, cross-namespace plugin / consumer references via `KongReferenceGrant`. Triggers on phrases — "kong auth0", "kong openid-connect plugin", "secure my api with auth0", "authenticate at the gateway", "machine-to-machine auth0", "m2m kong", "auth0 audience kong", "auth0 jwks kong", "auth0 universal login behind kong", "auth0 to kong consumer mapping", "auth0 rbac kong", "kong oidc anonymous", "kong oidc bearer", "kong oidc client_credentials", "kong oidc authorization_code", "auth0 custom domain kong", "auth0 logout kong", "refresh token rotation kong", "auth0 actions custom claim kong". Triggers on file patterns — `kong.yaml` / `kong.yml` containing `plugin: openid-connect`, `kind: KongPlugin` with `plugin: openid-connect`, Helm values keys `kong.plugins`, Auth0 Deploy CLI manifests under `tenant/` (`applications/*.json`, `resource-servers/*.json`, `actions/*.js`, `rules/*.js`, `roles/*.json`), Terraform files using `auth0_client`, `auth0_resource_server`, `auth0_connection`, `kong_plugin` / `konnect_gateway_plugin`. Authored by a distinguished Platform Engineer — emphasizes **gateway-enforced identity, zero trust upstream, JWKS-not-introspection for JWTs, audience-pinned per-API tokens, fail-closed at the edge**, never upstream auth as the only line of defense, never long-lived static secrets, never HS256 in production.'
+description: 'MUST USE when authoring, reviewing, debugging, or migrating **authentication and authorization at a Kong API Gateway fronted by Auth0 as the OIDC Identity Provider** — covers the Kong Gateway Enterprise `openid-connect` plugin against Auth0 tenants, the nine credential search modes (`session`, `bearer`, `introspection`, `userinfo`, `kong_oauth2`, `refresh_token`, `password`, `client_credentials`, `authorization_code`), Auth0-specific quirks (the `audience` parameter on `/authorize` and `/oauth/token` to mint API-scoped JWTs instead of opaque tokens, the `https://<tenant>.<region>.auth0.com/` issuer trailing-slash trap, custom domains for first-party auth, the M2M client-credentials grant vs the interactive Universal Login flow, RS256-only signing for production, Auth0 Actions/Rules adding custom claims under a namespaced URI), the four Auth0 application types (SPA, Regular Web App, Native, Machine-to-Machine), Auth0 APIs (Resource Server identifiers used as `audience`), Auth0 connections (database, social, enterprise SAML/OIDC, passwordless) and how they are surfaced to Kong via the `acr`/`amr`/`connection` claims, scopes (`openid profile email` plus API permissions), RBAC via Auth0 roles/permissions claims, JWKS discovery (`/.well-known/jwks.json`), token introspection caveats (Auth0 does NOT implement RFC 7662 for JWTs — use signature verification via JWKS instead), refresh-token rotation, RFC 6750 bearer header, logout via `/v2/logout?client_id=&returnTo=`, mapping Auth0 `sub` / `email` / `azp` / custom claims to Kong Consumers (`consumer_claims`, `consumer_by`, `credential_claim`), `anonymous` fallback consumers for tiered access, claim-based authorization (`scopes_required`, `groups_required`, `roles_required`, `audience_required`, `issuers_allowed`), upstream header injection (`upstream_access_token_header`, `upstream_headers_claims`) so backend services receive the verified identity, session storage choices (cookie vs Redis cluster for HA), PKCE enforcement, mTLS client auth for FAPI, KongPlugin CRD via Kong Ingress Controller, declarative `kong.yaml` via decK, Konnect control-plane config, and Terraform via the `kong/konnect` provider, AND **Kong Gateway Operator (KGO)** with upstream **Gateway API** resources (`GatewayClass`, `Gateway`, `HTTPRoute`, `GRPCRoute`, `ReferenceGrant`) — the operator-managed `GatewayConfiguration`, `DataPlane`, `ControlPlane`, `KonnectExtension`, `KonnectAPIAuthConfiguration`, `KongPlugin`, `KongClusterPlugin`, `KongConsumer`, `KongPluginBinding`, `KongReferenceGrant`, `KongLicense`, `KongVault` CRDs, the `konghq.com/plugins` annotation as the HTTPRoute→KongPlugin binding mechanism, plugin scope precedence (Gateway → Service → HTTPRoute → Consumer), the migration path from KIC + `Ingress` to KGO + `HTTPRoute`, cross-namespace plugin / consumer references via `KongReferenceGrant`. Triggers on phrases — "kong auth0", "kong openid-connect plugin", "secure my api with auth0", "authenticate at the gateway", "machine-to-machine auth0", "m2m kong", "auth0 audience kong", "auth0 jwks kong", "auth0 universal login behind kong", "auth0 to kong consumer mapping", "auth0 rbac kong", "kong oidc anonymous", "kong oidc bearer", "kong oidc client_credentials", "kong oidc authorization_code", "auth0 custom domain kong", "auth0 logout kong", "refresh token rotation kong", "auth0 actions custom claim kong". Triggers on file patterns — `kong.yaml` / `kong.yml` containing `plugin: openid-connect`, `kind: KongPlugin` with `plugin: openid-connect`, Helm values keys `kong.plugins`, Auth0 Deploy CLI manifests under `tenant/` (`applications/*.json`, `resource-servers/*.json`, `actions/*.js`, `rules/*.js`, `roles/*.json`), Terraform files using `auth0_client`, `auth0_resource_server`, `auth0_connection`, `kong_plugin` / `konnect_gateway_plugin`, AND **alethic/auth0-operator** CRDs (`apiVersion: kubernetes.auth0.com/v1` with `kind: Tenant` / `Client` / `ClientGrant` / `ResourceServer` / `Connection`; short names `a0tenant` / `a0app` / `a0cgr` / `a0api` / `a0con`). Authored by a distinguished Platform Engineer — emphasizes **gateway-enforced identity, zero trust upstream, JWKS-not-introspection for JWTs, audience-pinned per-API tokens, fail-closed at the edge**, never upstream auth as the only line of defense, never long-lived static secrets, never HS256 in production.'
 license: BSD-3-Clause
 compatibility: opencode
 metadata:
@@ -46,6 +46,7 @@ If a Kong route, plugin, or Auth0 tenant violates any of these, flag them before
 | Mapping Auth0 `sub` or `email` to a Kong Consumer for plugin chaining (ACL, rate-limit-by-consumer) | **Yes** |
 | Enabling RBAC at the edge using Auth0 roles/permissions claims | **Yes** |
 | Setting up tenant-per-environment Auth0 infrastructure (Deploy CLI / Terraform) | **Yes** |
+| Declarative Auth0 tenant config via Kubernetes CRDs (`alethic/auth0-operator`) co-located with Kong manifests | **Yes** |
 | Debugging "401 Unauthorized" from Kong with a valid-looking Auth0 token | **Yes** |
 | Choosing between Kong's `jwt` plugin vs `openid-connect` plugin for Auth0 tokens | **Yes** — answer below is almost always `openid-connect` |
 | Implementing FAPI-grade flows (mTLS, DPoP, PAR, JAR) | **Yes** |
@@ -220,6 +221,246 @@ Auth0 issues tokens with `iss: https://<tenant>.<region>.auth0.com/` by default.
 - The `iss` claim becomes `https://auth.example.com/` — Kong's `issuers_allowed` MUST be updated together with the custom-domain rollout.
 - The `audience` value is unchanged (it's tied to the Resource Server identifier, not the tenant URL).
 - `/.well-known/openid-configuration` and `/.well-known/jwks.json` are served from the custom domain.
+
+---
+
+## DECLARATIVE AUTH0 VIA KUBERNETES — `alethic/auth0-operator`
+
+`alethic/auth0-operator` (`github.com/alethic/auth0-operator`, MIT, C#, OCI Helm chart at `oci://ghcr.io/alethic/auth0-operator`) reconciles **Auth0 Management API** entities from Kubernetes CRDs under `kubernetes.auth0.com/v1`. It pairs symmetrically with **Kong Gateway Operator** on the gateway side: one GitOps repo declares Auth0 `Tenant` + `ResourceServer` + `Client` + `ClientGrant` AND Kong `HTTPRoute` + `KongPlugin(openid-connect)` against the same `audience` / `issuer` — every change reviewed, diffed, and rolled forward together.
+
+It is an **alternative**, not a replacement, for Auth0 Deploy CLI and the Auth0 Terraform provider. Pick it when:
+
+| Trigger | Use `alethic/auth0-operator` |
+|---------|------------------------------|
+| Kubernetes is already the deployment substrate; you want one reconciler model for Auth0 + Kong + apps | **Yes** |
+| Per-team `Tenant` / `ResourceServer` ownership scoped by namespace + RBAC | **Yes** |
+| Auth0 `Client`'s `client_id` / `client_secret` must land in a K8s `Secret` for in-cluster consumption | **Yes** — the `Client` CR's `secretRef` writes them automatically |
+| Multi-cloud / non-K8s consumers (CI runners, Lambdas, on-prem VMs) drive most Auth0 changes | **No** — Terraform's provider model fits better |
+| Strict change-control gate (`terraform plan` review, drift detection in a non-K8s plane) | **No** — stay on Terraform |
+| Production-grade SLA + commercial support required | **Partial** — alethic is community / small project (single-digit stars, MIT). Bake your own runbook for operator outage; pin the image; do NOT use `latest`. |
+
+> The operator README states it is **cluster-wide**; namespace-only mode is a TODO. Treat its ServiceAccount as a tenant-wide blast radius today.
+
+### 1. Install
+
+```bash
+# Operator (Helm OCI chart)
+helm install -n auth0-system auth0 oci://ghcr.io/alethic/auth0-operator \
+  --create-namespace \
+  --version 1.3.4                         # pin — do NOT float
+# Image: ghcr.io/alethic/auth0-operator-image (pulled by chart)
+```
+
+Defaults worth knowing (from `charts/auth0-operator/values.yaml`):
+
+- `operator.replicaCount: 1` — single-replica controller; raise + enable leader election for HA.
+- `operator.resources.requests`: `cpu: 50m`, `memory: 64Mi` — fine for tens of CRs; bump for fleets.
+- `operator.containerSecurityContext`: `runAsNonRoot: true`, `allowPrivilegeEscalation: false`, drops `ALL` caps, `seccompProfile: RuntimeDefault` — keep these on.
+- `operator.affinity.podAntiAffinity` is preset on `name=auth0-operator` / `kubernetes.io/hostname` — spreads replicas across nodes when you raise `replicaCount`.
+- `options.namespace` is **commented out / not yet supported**. Cluster scope today.
+
+### 2. Bootstrap the Auth0 Management API Secret
+
+The operator authenticates to Auth0 with an **M2M client** that has the **Auth0 Management API** as `audience` and the **minimum** permissions for what you'll manage (typically `read:clients`, `update:clients`, `create:clients`, `delete:clients`, plus the equivalents for `resource_servers`, `client_grants`, `connections`, `tenants`).
+
+```bash
+kubectl create secret generic example-tenant -n example \
+  --from-literal=clientId="$AUTH0_MGMT_CLIENT_ID" \
+  --from-literal=clientSecret="$AUTH0_MGMT_CLIENT_SECRET"
+```
+
+**Secret keys MUST be `clientId` and `clientSecret`** (camelCase, not `client_id`). The `Tenant.spec.auth.secretRef.name` points at this Secret.
+
+> The Management API M2M client is the **most privileged** credential in your Auth0 tenant. Vault it (ESO / SealedSecrets / SOPS), scope it per environment, rotate quarterly, audit its log stream. A leak = full tenant takeover.
+
+### 3. CRDs — one per Auth0 Management API entity
+
+| Kind | apiVersion | Short | Maps to Auth0 Management API |
+|------|------------|-------|------------------------------|
+| `Tenant` | `kubernetes.auth0.com/v1` | `a0tenant` | `PATCH /api/v2/tenants/settings` |
+| `Client` | `kubernetes.auth0.com/v1` | `a0app` | `/api/v2/clients` (POST/GET/PATCH/DELETE) — Application |
+| `ClientGrant` | `kubernetes.auth0.com/v1` | `a0cgr` | `/api/v2/client-grants` — binds a `Client` to a `ResourceServer` audience + scopes |
+| `ResourceServer` | `kubernetes.auth0.com/v1` | `a0api` | `/api/v2/resource-servers` — the `audience` Kong's `audience_required` pins to |
+| `Connection` | `kubernetes.auth0.com/v1` | `a0con` | `/api/v2/connections` — DB / social / enterprise / passwordless |
+
+### 4. Common `spec` schema
+
+Every CR (except `Tenant`) has:
+
+| Field | Purpose |
+|-------|---------|
+| `spec.tenantRef.name` | References the owning `Tenant` CR. Non-tenant resources REQUIRE this. |
+| `spec.conf` | Auth0 Management API create/update payload — **applied on every reconcile** (drift correction). |
+| `spec.init` | Same schema as `conf` — applied **only on initial create**. Use for values you want as a starting point but allow operators to tweak in the Auth0 dashboard later. |
+| `spec.find` | (some kinds) Locates a pre-existing Auth0 entity to adopt instead of creating a new one. |
+| `spec.policy` | List subset of `["Create", "Update", "Delete"]`. **Fail-closed default for prod: `["Create", "Update"]`** (no `Delete`) so a CR removal doesn't nuke the live entity. Enable `Delete` only when you've accepted the blast radius. |
+| `spec.secretRef.name` | (`Client` only) — K8s Secret the operator WRITES with extracted `client_id` / `client_secret`. |
+
+> `metadata.name` is the K8s handle. The Auth0-side display name is `spec.conf.name`. They don't have to match.
+
+### 5. Sample manifests — Auth0 tenant config that pairs with the Kong examples above
+
+**Tenant** — one per environment, points at the Management API Secret:
+
+```yaml
+apiVersion: kubernetes.auth0.com/v1
+kind: Tenant
+metadata:
+  name: example-prod
+  namespace: auth0-system
+spec:
+  auth:
+    domain: example-prod.us.auth0.com
+    secretRef:
+      name: example-prod-mgmt
+  conf:
+    friendly_name: Example Production
+  policy: ["Create", "Update"]    # never Delete on prod tenant settings
+```
+
+**ResourceServer** — the API Kong protects; `identifier` becomes the `audience` value referenced by Kong's `audience_required: [https://api.example.com]`:
+
+```yaml
+apiVersion: kubernetes.auth0.com/v1
+kind: ResourceServer
+metadata:
+  name: example-api
+  namespace: auth0-system
+spec:
+  tenantRef:
+    name: example-prod
+  policy: ["Create", "Update"]    # NOT Delete — losing this audience 401s every request
+  conf:
+    identifier: https://api.example.com          # MUST match Kong's audience_required exactly
+    name: Example API
+    signing_alg: RS256                            # non-negotiable per skill rule #4
+    token_dialect: access_token_authz             # emits permissions[] claim for Kong RBAC
+    enforce_policies: true                        # turns on Auth0 RBAC
+    allow_offline_access: true                    # required for refresh tokens
+    skip_consent_for_verifiable_first_party_clients: true
+    token_lifetime: 3600                          # 1h — short, paired with refresh-token rotation
+```
+
+**Client** — the M2M application that mints tokens for service-to-service calls through Kong; the operator writes the credentials into `example-m2m-credentials` for the calling app's Deployment to mount:
+
+```yaml
+apiVersion: kubernetes.auth0.com/v1
+kind: Client
+metadata:
+  name: orders-m2m
+  namespace: auth0-system
+spec:
+  tenantRef:
+    name: example-prod
+  secretRef:
+    name: orders-m2m-credentials                  # operator writes clientId/clientSecret here
+  policy: ["Create", "Update", "Delete"]
+  conf:
+    name: Orders → Payments (M2M)
+    app_type: non_interactive                     # client_credentials grant
+    grant_types: ["client_credentials"]
+    jwt_configuration:
+      alg: RS256
+      lifetime_in_seconds: 3600
+```
+
+**ClientGrant** — wires the M2M client to the ResourceServer audience with explicit scopes; without this, the M2M token mints but lacks the scopes Kong's `scopes_required` enforces:
+
+```yaml
+apiVersion: kubernetes.auth0.com/v1
+kind: ClientGrant
+metadata:
+  name: orders-m2m-to-example-api
+  namespace: auth0-system
+spec:
+  tenantRef:
+    name: example-prod
+  policy: ["Create", "Update", "Delete"]
+  conf:
+    clientRef:
+      name: orders-m2m                            # references Client CR above
+    audience:
+      name: example-api                           # references ResourceServer CR above
+    scope:
+      - read:orders
+      - write:orders
+```
+
+**Connection** — DB or enterprise IdP federated through Auth0; rare for Kong APIs (M2M doesn't use connections), common for browser-flow apps:
+
+```yaml
+apiVersion: kubernetes.auth0.com/v1
+kind: Connection
+metadata:
+  name: example-db
+  namespace: auth0-system
+spec:
+  tenantRef:
+    name: example-prod
+  policy: ["Create", "Update"]                    # never Delete a connection users authenticate against
+  conf:
+    name: Username-Password-Authentication
+    strategy: auth0
+    enabled_clients: []                           # populated by application CRs as they reference it
+```
+
+### 6. The `secretRef` contract — credentials land in K8s, NOT in the cluster's terraform state
+
+Only the `Client` CR writes a Secret. The operator creates `{secretRef.name}` (in the **same namespace as the Client CR**) with two keys:
+
+| Key | Value |
+|-----|-------|
+| `clientId` | Auth0 application `client_id` |
+| `clientSecret` | Auth0 application `client_secret` (only meaningful for `regular_web` / `non_interactive`; SPAs/native return empty) |
+
+Consume in the calling app's Deployment:
+
+```yaml
+envFrom:
+  - secretRef:
+      name: orders-m2m-credentials
+```
+
+The calling code reads `AUTH0_CLIENTID` / `AUTH0_CLIENTSECRET` from env (or whatever your bootstrap sets), POSTs to `https://example-prod.us.auth0.com/oauth/token` with `grant_type=client_credentials` and `audience=https://api.example.com`, then calls Kong with the resulting bearer JWT. **The same `audience` string flows from `ResourceServer.spec.conf.identifier` → ClientGrant `audience.name` → app's `/oauth/token` request → Kong `audience_required`.** A single rename in one place that doesn't propagate = fleet-wide 401.
+
+### 7. The full GitOps loop — Auth0 + Kong in one ApplicationSet
+
+```
+repo/
+  envs/prod/
+    auth0/
+      00-tenant.yaml                # alethic operator
+      10-resource-server.yaml       # identifier: https://api.example.com
+      20-client-m2m.yaml            # secretRef: orders-m2m-credentials
+      30-client-grant.yaml          # scope: [read:orders, write:orders]
+    kong/
+      00-gatewayconfiguration.yaml  # KGO (Enterprise license mount)
+      10-gatewayclass.yaml
+      20-gateway.yaml
+      30-kongplugin-oidc.yaml       # audience_required: [https://api.example.com] — MUST match resource-server.identifier
+      40-httproute-orders.yaml      # konghq.com/plugins: oidc-orders-api
+    apps/
+      orders-deployment.yaml        # envFrom: secretRef: orders-m2m-credentials
+```
+
+**CI gate**: parse both sides and assert `kong.audience_required == auth0.resourceServer.identifier` and `kong.issuers_allowed[0] == "https://" + auth0.tenant.domain + "/"` (with trailing slash). Don't trust two humans to keep two strings in sync across two systems — it always drifts.
+
+### 8. Operator-specific operational tips
+
+- **`spec.policy` is the kill switch.** Prod `Tenant` and `ResourceServer` CRs MUST omit `Delete`. A `kubectl delete resourceserver example-api` with `Delete` granted = every Kong request 401 within one reconcile loop. Treat `Delete` as a separate, audited PR.
+- **`spec.conf` reconciles every loop, `spec.init` does not.** If you want defaults that operators can tune in the Auth0 dashboard without git fighting back, put them in `init`. If you want the dashboard to be a read-only mirror of git, put them in `conf`.
+- **The operator is the only `client_secret` writer.** Don't pre-create the `secretRef` Secret manually with a placeholder — the operator overwrites it on first reconcile, and any consumer that race-read the placeholder breaks. Let the operator create it.
+- **Drift correction is silent.** If someone edits a `Client` in the Auth0 dashboard, the next reconcile clobbers their change without a warning event by default. Pair the operator with an Auth0 tenant log stream → SIEM alert on "config change by user != operator M2M client" so you catch out-of-band edits.
+- **Single replica + cluster scope = the operator pod is a SPOF for Auth0 reconciliation.** It's not on the request path (Kong's openid-connect plugin verifies JWTs locally via JWKS — Auth0 + the operator can be down and existing tokens still work), but new tenant changes wait until it's back. PDB + alert on the Deployment.
+- **No native namespace scoping yet.** If you need multi-tenant K8s isolation (team A can't read team B's Auth0 secrets), run **one operator per Auth0 tenant per namespace** with separate ServiceAccounts and rely on RBAC on the CRDs — until upstream ships `options.namespace`.
+- **Pin chart + image version.** Float = silent CRD schema change = "why are all my Auth0 entities reconciling to empty?" Reproduce the exact pin in dev → staging → prod.
+
+### 9. When NOT to use this operator
+
+- **Workforce SSO config, Auth0 Organizations, custom domains, branding, tenant log streams** — not in the supported CRD list above. Stay on Terraform / Deploy CLI for these.
+- **Auth0 Actions / Rules / Hooks code** — operator manages entity config, not code artifacts. Actions live in their own repo + deployed via Deploy CLI or the `auth0_action` Terraform resource.
+- **Multi-tenant SaaS where end-customers self-serve their Auth0 connections** — control plane shape is wrong; build a real provisioning service.
+- **Audit-heavy regulated environments** that demand `terraform plan` review with named approvers — K8s reconcile loop lacks the equivalent of a plan/apply split.
 
 ---
 
@@ -1003,6 +1244,14 @@ If you see per-request hits to Auth0, `auth_methods` includes `introspection` or
 | Floating `kong/kong-operator` image tag | Controller owning the edge gets a silent upstream bump = fleet-wide outage. Pin the version |
 | Custom claim without namespace prefix | Auth0 strips it silently; Kong's `groups_required` always fails |
 | `pull_request_target` (GHA) deploying Kong config from a fork PR | Out of scope for this skill but commonly co-located — see the `github-actions` skill |
+| `alethic/auth0-operator` `ResourceServer.spec.policy` includes `Delete` on prod | A misordered `kubectl delete` (or a bad ArgoCD prune) removes the Auth0 audience → every Kong request 401s on the next reconcile. Drop `Delete` from prod policy. |
+| `ResourceServer.spec.conf.identifier` drifts from Kong `audience_required` | Two strings, two systems, no CI gate = inevitable drift = all-tokens-rejected outage. Assert equality in CI. |
+| Pre-creating the `Client.spec.secretRef` Secret manually before the operator reconciles | Operator overwrites; any consumer that race-read the placeholder breaks at startup. Let the operator create it. |
+| Auth0 Management API M2M client scoped with `*:all` / over-broad permissions | Operator pod compromise = full tenant takeover. Scope to the exact verbs × kinds you reconcile. |
+| Floating `oci://ghcr.io/alethic/auth0-operator` chart version or `auth0-operator-image` tag | CRD schema changes between versions; silent drift in `spec.conf` interpretation. Pin both. |
+| Running multiple `alethic/auth0-operator` replicas without leader election | Two reconcilers POSTing the same `ClientGrant` race; Auth0 returns 409 / duplicate grants. Single replica OR enable leader election. |
+| Using `spec.conf` for values you want operators to tune in the Auth0 dashboard | Every reconcile clobbers the dashboard edit. Use `spec.init` for "starting point", `spec.conf` for "source of truth". |
+| `Tenant.spec.auth.secretRef` Secret created with keys `client_id` / `client_secret` (snake_case) | Operator expects `clientId` / `clientSecret` (camelCase) — fails to authenticate; CR stuck in error state with no Auth0 changes applied. |
 
 ---
 
@@ -1089,6 +1338,22 @@ Run through every box before declaring an Auth0+Kong integration complete.
 - [ ] Vault env vars / Secret mounts are on the DataPlane Deployment (via `GatewayConfiguration.dataPlaneOptions`), NOT on the operator pod.
 - [ ] If using Konnect: `KonnectExtension` + `KonnectAPIAuthConfiguration` exist, Konnect API token is vaulted.
 - [ ] Operator upgrade runbook tested in non-prod (`v1alpha1` CRD schema changes are possible).
+
+### `alethic/auth0-operator` (when Auth0 entities are reconciled from K8s CRDs)
+
+- [ ] Helm chart pinned to a specific `--version` (no `latest`, no floating major); image `ghcr.io/alethic/auth0-operator-image` also pinned.
+- [ ] Auth0 Management API M2M client used by the operator has **minimum** scopes for the kinds you reconcile (`read|create|update|delete` × `clients|resource_servers|client_grants|connections|tenants`), NOT `*:all`.
+- [ ] `Tenant.spec.auth.secretRef` Secret keys are **`clientId`** / **`clientSecret`** (camelCase) — NOT `client_id` / `client_secret`.
+- [ ] Management API Secret is vaulted (ESO / SealedSecrets / SOPS); never committed in plaintext.
+- [ ] Prod `Tenant` and `ResourceServer` CRs have `spec.policy: ["Create", "Update"]` — **`Delete` omitted**.
+- [ ] `ResourceServer.spec.conf.identifier` equals Kong's `audience_required` value, asserted by a CI gate that fails the build on drift.
+- [ ] `ResourceServer.spec.conf.signing_alg: RS256` + `token_dialect: access_token_authz` + `enforce_policies: true`.
+- [ ] `Tenant.spec.auth.domain` matches Kong's `issuers_allowed` URL host (with `https://` prefix and trailing `/`), asserted by the same CI gate.
+- [ ] `Client.spec.secretRef` Secret is **created by the operator**, not pre-seeded by hand; consumers mount it via `envFrom`.
+- [ ] Operator runs single-replica OR has leader election enabled (no two reconcilers racing).
+- [ ] PodDisruptionBudget on the operator Deployment; alert on `Available` going to zero (reconciliation halts, runtime traffic unaffected).
+- [ ] Auth0 tenant log stream alert fires on config changes by an actor != the operator's M2M `client_id` (catches out-of-band dashboard edits the operator will silently clobber next loop).
+- [ ] Operator upgrade runbook: bump chart version in non-prod, verify all CRs reconcile cleanly (`status.conditions[Ready] == True`), then promote.
 
 ### Governance
 
