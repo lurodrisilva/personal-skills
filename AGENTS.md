@@ -1,4 +1,4 @@
-<!-- Generated: 2026-04-25 | Updated: 2026-05-24 | DEEPINIT: 2026-05-24 -->
+<!-- Generated: 2026-04-25 | Updated: 2026-06-03 | DEEPINIT: 2026-06-03 -->
 
 # personal-skills
 
@@ -16,6 +16,7 @@ Distribution repository for **Claude Code / opencode skills**. Each leaf directo
 ## Subdirectories
 | Directory | Purpose |
 |-----------|---------|
+| `ai/` | AI-tooling skills — tools that AI coding assistants drive or integrate with, e.g. knowledge-graph builders and MCP servers (see `ai/AGENTS.md`) |
 | `coding/` | Application-development skills — language, framework, build-tooling guidance (see `coding/AGENTS.md`) |
 | `platform-engineering/` | Infrastructure, DevOps, CI/CD, supply-chain, observability skills (see `platform-engineering/AGENTS.md`) |
 | `scripts/` | Local + CI validation tooling for SKILL.md (see `scripts/AGENTS.md`) |

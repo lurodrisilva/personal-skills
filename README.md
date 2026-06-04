@@ -6,6 +6,12 @@ A collection of **Claude Code skills** -- comprehensive reference guides that Cl
 
 ## Available Skills
 
+### AI
+
+| Skill | Tool | Focus | Key Technologies |
+|-------|------|-------|------------------|
+| [graphify](ai/graphify/SKILL.md) | Graphify (`graphifyy` package → `graphify` command) | Codebase knowledge graph for AI coding assistants — build, query, serve, and maintain a queryable graph of code + docs + media | tree-sitter local AST (33+ languages, no API cost), SQL deterministic table/view/FK/JOIN extraction, faster-whisper transcription, Claude/LLM semantic extraction via parallel subagents, Leiden community detection, NetworkX node-link `graph.json` with `EXTRACTED`/`INFERRED`/`AMBIGUOUS` confidence, `/graphify` slash command + flags, `graphify-out/` artifacts (HTML viz, report, Obsidian, SVG), `.graphifyignore`, SHA256 incremental cache, headless `graphify extract --backend claude\|gemini\|ollama`, PR-impact (`graphify prs --triage`, AST-only git hooks + merge driver), MCP stdio server (`python -m graphify.serve`: `query_graph`/`get_node`/`get_neighbors`/`shortest_path`/`list_prs`/`get_pr_impact`/`triage_prs`), companion Docker MCP SQLite server (`mcp/sqlite`) |
+
 ### Coding
 
 | Skill | Language / Framework | Architecture | Key Technologies |
