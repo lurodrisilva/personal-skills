@@ -12,7 +12,7 @@ upgrades, security, and recovery on systems that already exist. Each subdirector
 ships one `SKILL.md` that Claude Code / opencode auto-loads when a project matches
 its `description`. **This directory IS CI-validated:** `scripts/validate-skills.sh`
 walks every domain in its `DOMAIN_DIRS` array — `coding/`, `platform-engineering/`,
-`operations/`, and `security/` — on every push and PR.
+`operations/`, `security/`, and `networking/` — on every push and PR.
 
 ## Key Files
 None at this level — all content lives in subdirectories.

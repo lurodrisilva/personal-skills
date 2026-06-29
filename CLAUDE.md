@@ -28,6 +28,8 @@ operations/              # Day-2 / SRE skills for operating running systems
   <skill-name>/SKILL.md
 security/                # security / hardening / threat-model skills
   <skill-name>/SKILL.md  # may also ship read-only audit scripts under tools/
+networking/              # networking-plane / CNI / dataplane skills
+  <skill-name>/SKILL.md
 scripts/validate-skills.sh
 .github/workflows/validate-skills.yml
 ```
@@ -36,7 +38,7 @@ Pick the domain directory first, then the skill sub-directory name:
 
 - `<language>-hex-clean` — hexagonal / clean architecture skills (e.g., `golang-hex-clean`)
 - `<domain>-<purpose>` — platform-engineering skills (e.g., `github-actions`)
-- descriptive kebab-case — cross-cutting build tooling (e.g., `create-makefiles`, `dockerfile-instructions`), `operations/` Day-2 skills (e.g., `kubernetes-operations`), and `security/` skills (e.g., `kubernetes-security`)
+- descriptive kebab-case — cross-cutting build tooling (e.g., `create-makefiles`, `dockerfile-instructions`), `operations/` Day-2 skills (e.g., `kubernetes-operations`), `security/` skills (e.g., `kubernetes-security`), and `networking/` skills (e.g., `kubernetes-networking`)
 
 The SKILL.md's frontmatter `name:` does not have to match the directory name (e.g., `coding/dotnet-hex-clean/` declares `name: dotnet-clean-arch`). Keep directory names stable because the README tables and external references link to them.
 
@@ -59,7 +61,7 @@ Conventions observed across the existing skills (keep them when adding new ones)
 
 ## Validator coverage
 
-`scripts/validate-skills.sh` walks every domain in the `DOMAIN_DIRS` array — currently `coding/`, `platform-engineering/`, `operations/`, and `security/`. Add new top-level domain directories to that array as the repo grows. The orphan-directory check accepts an exception: a directory that has no `SKILL.md` but contains one or more `*-expertise.md` / `*-workflow.md` files is treated as a learner-style knowledge directory rather than a malformed skill.
+`scripts/validate-skills.sh` walks every domain in the `DOMAIN_DIRS` array — currently `coding/`, `platform-engineering/`, `operations/`, `security/`, and `networking/`. Add new top-level domain directories to that array as the repo grows. The orphan-directory check accepts an exception: a directory that has no `SKILL.md` but contains one or more `*-expertise.md` / `*-workflow.md` files is treated as a learner-style knowledge directory rather than a malformed skill.
 
 ## Conventions
 

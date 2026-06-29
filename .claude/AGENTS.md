@@ -40,8 +40,9 @@ that ships first-class Claude Code artifacts other than `SKILL.md` files.
 ## Dependencies
 
 ### Internal
-- `agents/` — the subagent definitions (five teams: operator-development,
-  Crossplane, Dynatrace, Kubernetes-operations, Kubernetes-security).
+- `agents/` — the subagent definitions (six teams: operator-development,
+  Crossplane, Dynatrace, Kubernetes-operations, Kubernetes-security,
+  Kubernetes-networking).
 - `../platform-engineering/kubernetes-operator-golang/SKILL.md` — drives the
   `operator-*` / `*-author` / `olm-packager` operator team.
 - `../platform-engineering/crossplane/SKILL.md` — drives the `crossplane-*` team.
@@ -52,6 +53,9 @@ that ships first-class Claude Code artifacts other than `SKILL.md` files.
 - `../security/kubernetes-security/SKILL.md` — drives the security team
   (`k8s-cluster-hardener` / `k8s-rbac-iam-auditor` / `k8s-supplychain-admission`
   / `k8s-network-zerotrust` / `k8s-runtime-threat`).
+- `../networking/kubernetes-networking/SKILL.md` — drives the networking team
+  (`k8s-network-fundamentals` / `calico-architect` / `calico-ipam-bgp`
+  / `calico-policy-author` / `calico-troubleshooter`).
   Each skill's "Subagent Orchestration" table maps its surfaces/phases → its agents.
 
 ### External

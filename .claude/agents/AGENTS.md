@@ -14,6 +14,7 @@ skill's "Subagent Orchestration" table:
 - **Dynatrace team** → `platform-engineering/dynatrace/SKILL.md`
 - **Kubernetes-operations team** → `operations/kubernetes-operations/SKILL.md`
 - **Kubernetes-security team** → `security/kubernetes-security/SKILL.md`
+- **Kubernetes-networking team** → `networking/kubernetes-networking/SKILL.md`
 
 ## Key Files
 | File | Team | Description |
@@ -43,6 +44,11 @@ skill's "Subagent Orchestration" table:
 | `k8s-supplychain-admission.md` | k8s-security | scan/sign/SLSA, PSA + securityContext, ValidatingAdmissionPolicy / Gatekeeper / Kyverno, CI policy-as-code |
 | `k8s-network-zerotrust.md` | k8s-security | default-deny NetworkPolicy, Calico/Cilium microsegmentation, mTLS/mesh, egress control |
 | `k8s-runtime-threat.md` | k8s-security | Falco/Tetragon (eBPF) detection+enforcement, drift prevention, CNAPP, incident response |
+| `k8s-network-fundamentals.md` | k8s-networking | the K8s network model, CNI mechanics, Services/kube-proxy/EndpointSlices, CoreDNS, dual-stack |
+| `calico-architect.md` | k8s-networking | Calico components (Felix/BIRD/confd/Typha), dataplanes (eBPF/iptables/nftables/VPP), Tigera operator install, datastore |
+| `calico-ipam-bgp.md` | k8s-networking | IP pools/IPAM/borrowing, BGP peering/RR/service-IP advertisement, overlay-vs-native encapsulation (model=opus for complex BGP) |
+| `calico-policy-author.md` | k8s-networking | `NetworkPolicy`/`GlobalNetworkPolicy` (`projectcalico.org/v3`) mechanics, `action`/`order`/tiers, host endpoints, network sets |
+| `calico-troubleshooter.md` | k8s-networking | `calicoctl` node/BGP/IPAM status, route/MTU/connectivity, eBPF enablement, Typha scale |
 
 ## Subdirectories
 None.
@@ -66,7 +72,9 @@ None.
   workload-troubleshooter → {cluster-operator | autoscaling-engineer |
   security-rbac | network-storage}; k8s-security: threat-model → {cluster-hardener
   | rbac-iam-auditor | supplychain-admission | network-zerotrust |
-  runtime-threat}, layered for defense in depth).
+  runtime-threat}, layered for defense in depth; k8s-networking:
+  network-fundamentals → calico-architect → {calico-ipam-bgp |
+  calico-policy-author} → calico-troubleshooter).
 - These agents are **repo-scoped** (see `../AGENTS.md`). If you add an agent, also
   add it to the owning skill's Subagent Orchestration table and that skill dir's
   `AGENTS.md` "Companion Subagents" section; if you rename one, update both sides.
@@ -94,6 +102,8 @@ None.
   Kubernetes-operations team reads first and enforces.
 - `../../security/kubernetes-security/SKILL.md` — the contract the
   Kubernetes-security team reads first and enforces.
+- `../../networking/kubernetes-networking/SKILL.md` — the contract the
+  Kubernetes-networking team reads first and enforces.
 
 ### External
 - Claude Code subagent runtime (loads `tools` / `model` from frontmatter).

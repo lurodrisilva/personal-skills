@@ -1,7 +1,7 @@
 # personal-skills
 
 [![Validate Skills](https://github.com/lurodrisilva/personal-skills/actions/workflows/validate-skills.yml/badge.svg)](https://github.com/lurodrisilva/personal-skills/actions/workflows/validate-skills.yml)
-[![Skills](https://img.shields.io/badge/skills-22-blue)](#available-skills)
+[![Skills](https://img.shields.io/badge/skills-23-blue)](#available-skills)
 
 A collection of **Claude Code skills** -- comprehensive reference guides that Claude Code loads when working on projects matching specific technology patterns. Each skill encodes architectural rules, coding conventions, and framework-specific guidance for a technology stack.
 
@@ -54,6 +54,12 @@ A collection of **Claude Code skills** -- comprehensive reference guides that Cl
 |-------|----------|-------|------------------|
 | [kubernetes-security](security/kubernetes-security/SKILL.md) | Kubernetes (any distro) | **Securing / hardening** Kubernetes (the security discipline) — threat model & the 4Cs, cluster/kubelet/etcd hardening, secrets, least-privilege RBAC & identity, workload hardening, supply-chain & admission policy, zero-trust microsegmentation, runtime threat detection. Owns *why controls exist / how they fail*; complements `kubernetes-operations` (operate) and `github-actions` (CI supply chain). Ships read-only audit scripts under `tools/` and 5 companion subagents in `.claude/agents/` | 4Cs threat model, etcd `EncryptionConfiguration` + KMS, kube-bench / CIS Benchmark, `securityContext` + Pod Security Admission, RBAC (`escalate`/`bind`/`impersonate`), Trivy / SBOM, Sigstore Cosign + SLSA, ValidatingAdmissionPolicy / OPA Gatekeeper / Kyverno, default-deny `NetworkPolicy` + Calico / Cilium + mTLS, Falco / Tetragon (eBPF), External Secrets Operator / Vault, CNAPP |
 
+### Networking
+
+| Skill | Platform | Focus | Key Technologies |
+|-------|----------|-------|------------------|
+| [kubernetes-networking](networking/kubernetes-networking/SKILL.md) | Kubernetes (any distro) | The **networking plane** — the pod network model, the CNI, Services/kube-proxy/DNS, and **Calico** as the CNI in depth (architecture, dataplanes, IPAM, BGP, encapsulation, policy mechanics). Owns *how the network works / how Calico implements it*; complements `kubernetes-operations` (debug) and `kubernetes-security` (policy strategy). 5 companion subagents in `.claude/agents/` | IP-per-pod model, CNI spec (`ADD`/`DEL`, conflist), Services + `kube-proxy` (iptables/IPVS/nftables) + EndpointSlices, CoreDNS `ndots`, Calico architecture (Felix/BIRD/confd/Typha), dataplanes (eBPF/iptables/nftables/VPP), Tigera operator `Installation`, `IPPool` + IPAM + borrowing, BGP (`BGPConfiguration`/`BGPPeer`, route reflectors, service-IP advertising), VXLAN/IPIP/no-encap, `GlobalNetworkPolicy` (`projectcalico.org/v3`, `order`/`Pass`/tiers), `HostEndpoint`, `calicoctl` |
+
 ## How It Works
 
 Skills are SKILL.md files that Claude Code can load into its context to provide domain-specific guidance. When Claude Code detects that a project matches a skill's description, it applies the encoded rules and patterns automatically.
@@ -95,6 +101,7 @@ Skills are organized by domain:
 - `platform-engineering/` -- infrastructure / DevOps / CI-CD / supply-chain skills
 - `operations/` -- Day-2 / SRE skills for **running** systems (e.g. `kubernetes-operations`)
 - `security/` -- security / hardening / threat-model skills (e.g. `kubernetes-security`; may ship read-only audit scripts under `tools/`)
+- `networking/` -- networking-plane / CNI / dataplane / network-policy-mechanics skills (e.g. `kubernetes-networking`)
 
 ## SKILL.md Format
 
@@ -133,6 +140,7 @@ Markdown content with architecture rules, patterns, and code examples.
    - `platform-engineering/` for infrastructure, DevOps, CI/CD, or supply-chain skills
    - `operations/` for Day-2 / SRE skills that **operate** running systems
    - `security/` for security / hardening / threat-model skills
+   - `networking/` for networking-plane / CNI / dataplane skills
 2. Create a subdirectory following the relevant naming convention:
    - `<language>-hex-clean` for hexagonal/clean architecture skills (e.g., `golang-hex-clean`)
    - `<domain>-<purpose>` for platform-engineering skills (e.g., `github-actions`)
@@ -147,7 +155,7 @@ Markdown content with architecture rules, patterns, and code examples.
 
 ### Validation Checks
 
-The CI pipeline runs on every push to `master` and every pull request, validating every `SKILL.md` under `coding/`, `platform-engineering/`, `operations/`, and `security/`:
+The CI pipeline runs on every push to `master` and every pull request, validating every `SKILL.md` under `coding/`, `platform-engineering/`, `operations/`, `security/`, and `networking/`:
 
 - Every directory under each domain must contain a `SKILL.md` (or, as a learner-friendly exception, one or more `*-expertise.md` / `*-workflow.md` notes)
 - Frontmatter must be valid YAML with all required fields (`name`, `description`, `license`, `compatibility`, `metadata`)
