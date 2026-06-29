@@ -25,7 +25,7 @@ None.
 - The `description:` field is intentionally exhaustive (auto-detection trigger surface). When extending coverage to new file patterns or workflows, extend the description's trigger list to match.
 
 ### Testing Requirements
-- **`scripts/validate-skills.sh` does NOT walk this directory** (the validator is hardcoded to `coding/`). After editing, manually verify per the parent skill's three checks:
+- **`scripts/validate-skills.sh` validates this directory** (its `DOMAIN_DIRS` includes `platform-engineering/`) — CI runs it on every push and PR. Run it locally before pushing; it checks:
   1. YAML frontmatter parses and contains `name`, `description`, `license`, `compatibility`, non-empty `metadata` map.
   2. Markdown body after the closing `---` is non-empty.
   3. Fenced code-block markers are even in count.

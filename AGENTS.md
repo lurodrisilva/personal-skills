@@ -1,4 +1,4 @@
-<!-- Generated: 2026-04-25 | Updated: 2026-06-03 | DEEPINIT: 2026-06-03 -->
+<!-- Generated: 2026-04-25 | Updated: 2026-06-28 | DEEPINIT: 2026-06-28 -->
 
 # personal-skills
 
@@ -9,9 +9,9 @@ Distribution repository for **Claude Code / opencode skills**. Each leaf directo
 | File | Description |
 |------|-------------|
 | `README.md` | User-facing index of available skills, SKILL.md format spec, and contribution guide |
-| `CLAUDE.md` | In-repo agent guidance: validator command, layout, SKILL.md contract, validator coverage gap |
+| `CLAUDE.md` | In-repo agent guidance: validator command, layout, SKILL.md contract, validator coverage |
 | `LICENSE` | BSD-3-Clause license text (matches `license:` frontmatter on every SKILL.md) |
-| `.gitignore` | Ignores `.omc/`, local agent state, and other per-clone artifacts |
+| `.gitignore` | Ignores `.omc/` (per-clone OMC state). `.claude/settings.local.json` is ignored via the user's global gitignore, not this file |
 
 ## Subdirectories
 | Directory | Purpose |
@@ -21,6 +21,7 @@ Distribution repository for **Claude Code / opencode skills**. Each leaf directo
 | `platform-engineering/` | Infrastructure, DevOps, CI/CD, supply-chain, observability skills (see `platform-engineering/AGENTS.md`) |
 | `scripts/` | Local + CI validation tooling for SKILL.md (see `scripts/AGENTS.md`) |
 | `omc-learned/` | Single-insight expertise notes captured by `/oh-my-claudecode:learner` — staging ground for future SKILL.md promotion; not loaded by validator (see `omc-learned/AGENTS.md`) |
+| `.claude/` | Repo-scoped Claude Code config — committed subagent definitions that skills orchestrate, plus local-only settings (see `.claude/AGENTS.md`) |
 | `.github/workflows/` | CI workflow that runs `scripts/validate-skills.sh` on every push and PR |
 
 ## For AI Agents
@@ -35,7 +36,7 @@ Distribution repository for **Claude Code / opencode skills**. Each leaf directo
 - Run `./scripts/validate-skills.sh` before every push.
 - Exit code = error count; CI runs the same script via `.github/workflows/validate-skills.yml`.
 - The validator requires `yq` on `PATH` (Mike Farah's Go implementation, same binary as `mikefarah/yq@master` in CI).
-- **Known coverage gap:** the validator only walks `coding/`. `platform-engineering/**/SKILL.md` is **not** covered by CI today — manually re-check frontmatter validity and fenced-block balance for any platform-engineering edit until the validator is extended.
+- **Validator coverage:** the validator walks every domain in its `DOMAIN_DIRS` array — currently `coding/` **and** `platform-engineering/`. Both are CI-checked on every push and PR. `ai/`, `omc-learned/`, and `scripts/` are **not** walked — manually re-check frontmatter validity and fenced-block balance when editing a `SKILL.md` outside the covered domains. Add a new top-level domain to `DOMAIN_DIRS` to extend coverage.
 
 ### Common Patterns
 - `license: BSD-3-Clause` on every SKILL.md (matches root `LICENSE`).
