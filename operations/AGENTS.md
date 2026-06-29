@@ -1,0 +1,69 @@
+<!-- Parent: ../AGENTS.md -->
+<!-- Generated: 2026-06-29 | Updated: 2026-06-29 | DEEPINIT: 2026-06-29 -->
+
+# operations
+
+## Purpose
+Day-2 / SRE skills for **operating running systems** — the third CI-validated
+domain, parallel to `coding/` (build apps) and `platform-engineering/` (build
+infra). Where those domains are about *creating* software and platforms, this
+domain is about *running* them: incident triage, capacity, scaling, maintenance,
+upgrades, security, and recovery on systems that already exist. Each subdirectory
+ships one `SKILL.md` that Claude Code / opencode auto-loads when a project matches
+its `description`. **This directory IS CI-validated:** `scripts/validate-skills.sh`
+walks every domain in its `DOMAIN_DIRS` array — `coding/`, `platform-engineering/`,
+and `operations/` — on every push and PR.
+
+## Key Files
+None at this level — all content lives in subdirectories.
+
+## Subdirectories
+| Directory | Purpose |
+|-----------|---------|
+| `kubernetes-operations/` | Day-2 Kubernetes operations (SRE) — kubectl triage & Pod-failure decision trees, rollouts, resources/QoS, scheduling, autoscaling, disruptions/drain/upgrades, RBAC + Pod Security, networking, storage, observability; ships a 5-agent ops team in `../.claude/agents/` (see `kubernetes-operations/AGENTS.md`) |
+
+## For AI Agents
+
+### Working In This Directory
+- This domain is for **operating** systems, not building them. Keep the boundary
+  sharp: building a Kubernetes controller belongs in
+  `../platform-engineering/kubernetes-operator-golang/`; building a control plane
+  in `../platform-engineering/crossplane/`; *running* clusters belongs here.
+- Naming convention: descriptive kebab-case, typically `<platform>-operations`
+  (e.g. `kubernetes-operations`). Directory names are stable references —
+  `README.md` and external docs link to them.
+- The SKILL.md `name:` is independent of the directory name (both forms valid),
+  but here they currently match (`kubernetes-operations`).
+- Ops skills lead with **triage / decision-trees** and "what do I look at" tables,
+  not a feature tour: one decision tree + one runnable example per surface. State
+  *behavior* (stable) and avoid pinning a single product version (it rots) — point
+  to the canonical upstream docs and the tool's own `--help`/introspection.
+
+### Testing Requirements
+- **`scripts/validate-skills.sh` validates this directory** (its `DOMAIN_DIRS`
+  array includes `operations/`); CI runs it on every push and PR. Run it locally
+  before pushing; per `SKILL.md` it checks:
+  1. Frontmatter parses as YAML with `name`, `description`, `license`, `compatibility`, non-empty `metadata` map.
+  2. Markdown body after the closing `---` is non-empty.
+  3. Fenced code-block markers are even in count (these skills ship many bash/yaml blocks).
+- After editing frontmatter, confirm `.description` still parses as a **string**
+  (not a map): `yq '.description | type'` → `!!str`. A colon-dense description needs
+  a `>-` block scalar.
+
+### Common Patterns
+- `metadata:` carries `domain: operations` plus `platform:` and `pattern:`
+  (e.g. `pattern: day2-operations`) tags downstream registries can filter on.
+- Body shape: CORE PRINCIPLES (non-negotiable) → a TRIAGE MAP → surface-by-surface
+  phases with one decision tree + one runnable example each → anti-patterns table
+  (violation → why → do instead) → pre-done checklist → reference → subagent
+  orchestration. Same authoring shape as the `platform-engineering` skills.
+
+## Dependencies
+
+### Internal
+- `../scripts/validate-skills.sh` — validates this tree (its `DOMAIN_DIRS` includes `operations/`); CI runs it on every push and PR. **A missing domain dir is itself a validator error**, so this directory must always contain at least one valid skill.
+- `../README.md` — references each skill in the "Operations" table; rename → README update required.
+- `../.claude/agents/` — the companion `k8s-*` subagent team that `kubernetes-operations` orchestrates.
+- `../CLAUDE.md` — authoritative SKILL.md contract and repo layout.
+
+<!-- MANUAL: -->

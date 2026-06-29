@@ -23,7 +23,7 @@ None.
 - The `docker-mcp-sqlite` material is a **companion** server, not Graphify storage — never conflate the two when editing.
 
 ### Testing Requirements
-- **`scripts/validate-skills.sh` does NOT walk this directory** (its `DOMAIN_DIRS` covers `coding/` and `platform-engineering/`, not `ai/`). After editing, manually verify:
+- **`scripts/validate-skills.sh` does NOT walk this directory** (its `DOMAIN_DIRS` covers `coding/`, `platform-engineering/`, and `operations/`, not `ai/`). After editing, manually verify:
   1. YAML frontmatter parses and contains `name`, `description`, `license`, `compatibility`, non-empty `metadata` map.
   2. Markdown body after the closing `---` is non-empty.
   3. Fenced code-block markers are even in count (this file's SKILL.md uses many fenced shell blocks — easy to unbalance).
@@ -37,7 +37,7 @@ None.
 ### Internal
 - `../AGENTS.md` — `ai/` domain overview and the manual-validation procedure for this tree.
 - `../../README.md` — should list this skill (no `ai/` table row yet; tracked).
-- `../../scripts/validate-skills.sh` — does not validate this file; its `DOMAIN_DIRS` covers `coding/` and `platform-engineering/`, not `ai/`. Validate manually (or add `ai` to `DOMAIN_DIRS` to opt in).
+- `../../scripts/validate-skills.sh` — does not validate this file; its `DOMAIN_DIRS` covers `coding/`, `platform-engineering/`, and `operations/`, not `ai/`. Validate manually (or add `ai` to `DOMAIN_DIRS` to opt in).
 
 ### External
 None at runtime — this is documentation, not code. (The documented tool itself is the PyPI `graphifyy` package + optional Docker MCP SQLite server.)
