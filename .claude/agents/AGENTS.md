@@ -15,6 +15,7 @@ skill's "Subagent Orchestration" table:
 - **Kubernetes-operations team** → `operations/kubernetes-operations/SKILL.md`
 - **Kubernetes-security team** → `security/kubernetes-security/SKILL.md`
 - **Kubernetes-networking team** → `networking/kubernetes-networking/SKILL.md`
+- **Azure-SRE-Agent team** → `operations/azure-sre-agent/SKILL.md`
 
 ## Key Files
 | File | Team | Description |
@@ -49,6 +50,11 @@ skill's "Subagent Orchestration" table:
 | `calico-ipam-bgp.md` | k8s-networking | IP pools/IPAM/borrowing, BGP peering/RR/service-IP advertisement, overlay-vs-native encapsulation (model=opus for complex BGP) |
 | `calico-policy-author.md` | k8s-networking | `NetworkPolicy`/`GlobalNetworkPolicy` (`projectcalico.org/v3`) mechanics, `action`/`order`/tiers, host endpoints, network sets |
 | `calico-troubleshooter.md` | k8s-networking | `calicoctl` node/BGP/IPAM status, route/MTU/connectivity, eBPF enablement, Typha scale |
+| `azure-sre-rca.md` | azure-sre-agent | incident root-cause hypothesis + **proposed** gated mitigation (never auto-applies); `opus` |
+| `azure-sre-observability.md` | azure-sre-agent | App Insights / Log Analytics (KQL) / Grafana / Dynatrace-DQL signal gathering + correlation (read-only) |
+| `azure-sre-sourcecode.md` | azure-sre-agent | deploy/release/config-change correlation across GitHub / Azure DevOps (read-only) |
+| `azure-sre-architecture.md` | azure-sre-agent | resource topology + dependency + blast-radius mapping (read-only) |
+| `azure-sre-scanning.md` | azure-sre-agent | scheduled security / compliance / drift sweeps (read-only) |
 
 ## Subdirectories
 None.
@@ -74,7 +80,9 @@ None.
   | rbac-iam-auditor | supplychain-admission | network-zerotrust |
   runtime-threat}, layered for defense in depth; k8s-networking:
   network-fundamentals → calico-architect → {calico-ipam-bgp |
-  calico-policy-author} → calico-troubleshooter).
+  calico-policy-author} → calico-troubleshooter; azure-sre-agent:
+  {observability | architecture} → sourcecode → rca (proposes, gated) ; scanning
+  on a schedule).
 - These agents are **repo-scoped** (see `../AGENTS.md`). If you add an agent, also
   add it to the owning skill's Subagent Orchestration table and that skill dir's
   `AGENTS.md` "Companion Subagents" section; if you rename one, update both sides.
@@ -104,6 +112,8 @@ None.
   Kubernetes-security team reads first and enforces.
 - `../../networking/kubernetes-networking/SKILL.md` — the contract the
   Kubernetes-networking team reads first and enforces.
+- `../../operations/azure-sre-agent/SKILL.md` — the contract the Azure-SRE-Agent
+  team reads first and enforces (CORE PRINCIPLES + the propose-then-approve doctrine).
 
 ### External
 - Claude Code subagent runtime (loads `tools` / `model` from frontmatter).

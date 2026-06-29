@@ -460,6 +460,51 @@ resource "dynatrace_slo" "checkout_availability" {
 
 ---
 
+## PHASE F — MCP SERVER SURFACE (agent-facing, Platform plane, `Bearer`)
+
+When an **AI agent** drives Dynatrace (e.g. Azure SRE Agent, or any MCP host), it
+goes through the **Dynatrace MCP server** — not the raw API. The critical fact for
+this skill's plane/auth map: **the MCP server lives on the Platform plane and
+authenticates with a Platform token (`Bearer`), NOT the Classic `Api-Token`.**
+
+**Two forms (disambiguate):**
+
+| Form | Transport | Auth | Notes |
+|---|---|---|---|
+| **Dynatrace-hosted remote gateway** | Streamable-HTTP | **Platform token** (Bearer) | endpoint `https://{env}.apps.dynatrace.com/platform-reserved/mcp-gateway/v0.1/servers/dynatrace-mcp/mcp` |
+| **OSS local** `dynatrace-oss/dynatrace-mcp` | stdio (npx) | OAuth **or** platform token | run it yourself; good for local agents |
+
+> **Gotcha — OAuth client is NOT supported on the remote gateway.** OAuth tokens
+> live only ~5 minutes, so the hosted gateway **requires a Platform token**. The
+> gateway needs platform permissions **`mcp-gateway:servers:read`** +
+> **`mcp-gateway:servers:invoke`**, **plus per-tool scopes** (e.g.
+> `storage:logs:read` for log queries). This is the same Platform-Bearer plane as
+> Phase B's DQL — see the PLANE & AUTH MAP.
+
+**Tools exposed** (`dynatrace-oss/dynatrace-mcp`):
+- *Grail / DQL:* `execute_dql`, `verify_dql`, `generate_dql_from_natural_language`, `explain_dql_in_natural_language`
+- *Observability / problems:* `list_problems`, `list_vulnerabilities`, `list_exceptions`, `get_kubernetes_events`
+- *Davis intelligence:* `chat_with_davis_copilot`, `list_davis_analyzers`, `execute_davis_analyzer`
+- *Actionable (write-side — NOT read-only):* `send_slack_message`, `send_email`, `send_event`
+
+> **It is not purely read-only.** The `send_*` tools take actions. If an agent
+> should only *observe*, do not register the notification tools (on Azure SRE Agent,
+> scope with `mcp_tools:` and mind the 80-tool budget).
+
+> **Cost warning — `execute_dql` incurs Grail consumption (GB scanned).** An agent
+> looping DQL queries can run up real cost. Constrain time ranges / buckets, and
+> prefer `verify_dql` before `execute_dql` in agentic loops. Same Grail
+> billing-by-bytes-scanned model as Phase B.
+
+**Connecting to Azure SRE Agent:** Dynatrace is a **preconfigured partner
+connector** (Streamable-HTTP + **Bearer / Platform token**) — enter the env URL +
+platform token, pick the tools (mind the budget), and they become callable in chat
+and subagents. The agent platform, its Permission gate, and the 80-tool budget are
+covered by the **`azure-sre-agent`** skill; the cross-tool Detect→Decide→Act
+pattern by **`agentic-k8s-ops`**.
+
+---
+
 ## OPERATIONS & DAY-2
 
 - **SLOs** as code, alert on **burn rate** not raw thresholds.

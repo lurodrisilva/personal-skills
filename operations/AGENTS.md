@@ -21,6 +21,8 @@ None at this level — all content lives in subdirectories.
 | Directory | Purpose |
 |-----------|---------|
 | `kubernetes-operations/` | Day-2 Kubernetes operations (SRE) — kubectl triage & Pod-failure decision trees, rollouts, resources/QoS, scheduling, autoscaling, disruptions/drain/upgrades, RBAC + Pod Security, networking, storage, observability; ships a 5-agent ops team in `../.claude/agents/` (see `kubernetes-operations/AGENTS.md`) |
+| `azure-sre-agent/` | **Azure SRE Agent** (Preview) — Microsoft's AI-assisted SRE agent: the 6 extension primitives, the MCP-connector model (transports / auth / 80-tool budget), and the **propose-then-approve / Permission gate** doctrine; ships a 5-agent companion team in `../.claude/agents/` (see `azure-sre-agent/AGENTS.md`) |
+| `agentic-k8s-ops/` | Umbrella playbook for AI-assisted SRE on K8s/Azure — the **Detect→Decide→Act** pattern, the credible **MCP tool-belt** (with read-only guardrails per server), and the **blast-radius doctrine**; coordinates the other skills rather than duplicating them (see `agentic-k8s-ops/AGENTS.md`) |
 
 ## For AI Agents
 
