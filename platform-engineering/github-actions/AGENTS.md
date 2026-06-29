@@ -23,7 +23,7 @@ None.
 - This skill is also the canonical reference for the repo's own `.github/workflows/validate-skills.yml` — keep advice consistent with what that workflow already does (pinned `actions/checkout@v4`, `mikefarah/yq@master`, floor `permissions: contents: read`).
 
 ### Testing Requirements
-- **`scripts/validate-skills.sh` does NOT walk this directory.** After editing, manually verify frontmatter validity, non-empty body, and balanced fenced blocks.
+- **`scripts/validate-skills.sh` validates this directory** (its `DOMAIN_DIRS` includes `platform-engineering/`) — CI runs it on every push and PR. Run it locally before pushing; it checks frontmatter validity, non-empty body, and balanced fenced blocks.
 - The skill's own examples must satisfy its own rules — if you add a new workflow snippet, it must pin actions by SHA and start at floor `permissions:`.
 
 ### Common Patterns

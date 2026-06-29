@@ -23,10 +23,10 @@ None.
 - The `description:` field is intentionally exhaustive (trigger surface for auto-detection). When extending coverage to new file patterns / phrases / CRDs, extend the description's trigger list to match.
 
 ### Testing Requirements
-- **`scripts/validate-skills.sh` does NOT walk this directory.** After editing, manually verify:
+- **`scripts/validate-skills.sh` validates this directory** (its `DOMAIN_DIRS` includes `platform-engineering/`) — CI runs it on every push and PR. Run it locally before pushing; it checks:
   1. YAML frontmatter parses and contains `name`, `description`, `license`, `compatibility`, non-empty `metadata` map.
   2. Markdown body after the closing `---` is non-empty.
-  3. Fenced code-block markers are even in count (an unclosed ` ``` ` fails CI once the validator is extended).
+  3. Fenced code-block markers are even in count (an unclosed ` ``` ` fails CI).
 - The skill's own snippets must satisfy its own rules — every `openid-connect` example must declare `audience`, an `*_required` claim, vault-referenced `client_secret`, RS256, and explicit `issuers_allowed` with trailing slash.
 
 ### Common Patterns

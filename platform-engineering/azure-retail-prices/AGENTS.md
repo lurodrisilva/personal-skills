@@ -22,7 +22,7 @@ None.
 - Sister skills (`azure-pg-flex`, `kusto-kql-api`, `addons-and-building-blocks`) — extend description triggers when introducing new FinOps / dashboard / Crossplane file patterns.
 
 ### Testing Requirements
-- **`scripts/validate-skills.sh` does NOT walk this directory.** After editing, manually verify:
+- **`scripts/validate-skills.sh` validates this directory** (its `DOMAIN_DIRS` includes `platform-engineering/`) — CI runs it on every push and PR. Run it locally before pushing; it checks:
   1. YAML frontmatter parses and contains `name`, `description`, `license`, `compatibility`, non-empty `metadata` map.
   2. Markdown body after the closing `---` is non-empty.
   3. Fenced code-block markers are even in count.

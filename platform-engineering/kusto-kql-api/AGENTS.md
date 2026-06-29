@@ -24,7 +24,7 @@ None.
 - The skill draws a hard line at scope: **query** + **management** + **API surface**. Streaming ingestion is acknowledged ("Partially — apply only the auth + endpoint sections; ingestion is a separate skill") but not covered in depth. Do not let the file grow into a full ingestion playbook — add a sibling skill instead.
 
 ### Testing Requirements
-- **`scripts/validate-skills.sh` does NOT walk this directory** (the validator is hardcoded to `coding/`). After editing, manually verify per the parent skill's three checks:
+- **`scripts/validate-skills.sh` validates this directory** (its `DOMAIN_DIRS` includes `platform-engineering/`) — CI runs it on every push and PR. Run it locally before pushing; it checks:
   1. YAML frontmatter parses and contains `name`, `description`, `license`, `compatibility`, non-empty `metadata` map.
   2. Markdown body after the closing `---` is non-empty.
   3. Fenced code-block markers are even in count.

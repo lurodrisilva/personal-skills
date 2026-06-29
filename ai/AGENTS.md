@@ -23,7 +23,7 @@ None at this level — all content lives in subdirectories.
 - `description:` opens with `MUST USE when …` and exhaustively lists trigger phrases / file patterns — this is what auto-detection matches on.
 
 ### Testing Requirements
-- **`scripts/validate-skills.sh` does NOT walk this directory** — it only walks `coding/` (same coverage gap as `platform-engineering/`). After editing any SKILL.md here, manually verify:
+- **`scripts/validate-skills.sh` does NOT walk this directory** — its `DOMAIN_DIRS` covers `coding/` and `platform-engineering/`, not `ai/`. After editing any SKILL.md here, manually verify:
   1. YAML frontmatter parses and contains `name`, `description`, `license`, `compatibility`, non-empty `metadata` map.
   2. Markdown body after the closing `---` is non-empty.
   3. Fenced code-block markers are even in count.

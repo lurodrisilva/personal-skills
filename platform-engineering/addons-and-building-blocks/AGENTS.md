@@ -23,11 +23,10 @@ None.
 - The `description:` field is unusually long because this skill must trigger on many file patterns and PR-level signals. When extending coverage, extend the description's trigger list to match.
 
 ### Testing Requirements
-- **`scripts/validate-skills.sh` does NOT walk this directory.** After editing:
-  1. Manually verify the YAML frontmatter parses and contains `name`, `description`, `license`, `compatibility`, non-empty `metadata` map.
-  2. Verify body after closing `---` is non-empty.
-  3. Verify fenced code-block markers are even in count.
-- One option: run a copy of `validate-skills.sh` with `CODING_DIR` pointed at this directory's parent.
+- **`scripts/validate-skills.sh` validates this directory** (its `DOMAIN_DIRS` includes `platform-engineering/`) — CI runs it on every push and PR. Run it locally before pushing; it checks:
+  1. YAML frontmatter parses and contains `name`, `description`, `license`, `compatibility`, non-empty `metadata` map.
+  2. Body after closing `---` is non-empty.
+  3. Fenced code-block markers are even in count.
 
 ### Common Patterns
 - "Non-negotiables encoded in this skill" numbered list — same authoring style as the `github-actions` skill.

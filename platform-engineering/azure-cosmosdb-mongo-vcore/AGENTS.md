@@ -25,7 +25,7 @@ None.
 - Scope guard: the cluster type covered here is `Microsoft.DocumentDB/mongoClusters` (Cosmos DB for MongoDB **vCore**). Do **not** extend these notes to cover Cosmos DB for MongoDB **RU** (request units, the original Cosmos Mongo offering) or Azure Cosmos DB for PostgreSQL (Citus). They have different RPs, different connection-string formats, different driver expectations, and would dilute the recognition patterns. Add a sibling directory instead.
 
 ### Testing Requirements
-- **`scripts/validate-skills.sh` does NOT walk this directory** — both because the validator is hardcoded to `coding/` (parent skill's known coverage gap) **and** because these expertise notes do not satisfy the SKILL.md required-field contract by design. Do not "fix" the frontmatter to pass the SKILL.md validator; the alternate `triggers:` schema is correct here.
+- **`scripts/validate-skills.sh` walks `platform-engineering/` but does NOT validate these expertise notes** — the validator recognizes a directory with no `SKILL.md` but one or more `*-expertise.md` / `*-workflow.md` files as a knowledge dir (its orphan-directory exception) and skips the SKILL.md frontmatter/body/fence checks. Do not "fix" the frontmatter to pass the SKILL.md validator; the alternate `triggers:` schema is correct here. (If you ever add a `SKILL.md` to this directory, the validator **will** then validate that file.)
 - Manual checks per file:
   1. Frontmatter parses as YAML (delimited by `---` first/last), with `name`, `description`, and a non-empty `triggers:` list.
   2. Markdown body after the closing `---` is non-empty.
