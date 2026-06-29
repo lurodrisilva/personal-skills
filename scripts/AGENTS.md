@@ -9,7 +9,7 @@ Local + CI validation tooling for SKILL.md files. The single script in this dire
 ## Key Files
 | File | Description |
 |------|-------------|
-| `validate-skills.sh` | Bash validator that enforces the SKILL.md contract on every file under `coding/`. Exit code = error count; `0` = all checks passed |
+| `validate-skills.sh` | Bash validator that enforces the SKILL.md contract on every file under each `DOMAIN_DIRS` tree (`coding/`, `platform-engineering/`, `operations/`). Exit code = error count; `0` = all checks passed |
 
 ## Subdirectories
 None.
@@ -19,7 +19,7 @@ None.
 ### Working In This Directory
 - `validate-skills.sh` is invoked verbatim by `.github/workflows/validate-skills.yml` — keep it executable (`chmod +x`) and POSIX-portable shell.
 - Uses `yq` (Mike Farah's Go implementation) for frontmatter parsing. Do not switch to Python `yq` (jq wrapper) — the CI step pins `mikefarah/yq@master`.
-- The `DOMAIN_DIRS=(coding platform-engineering)` array drives which trees are validated; the orphan-directory check and the per-`SKILL.md` validation loop both iterate it. Add a new top-level domain to that array to extend coverage. A subdirectory with no `SKILL.md` but one or more `*-expertise.md` / `*-workflow.md` notes is accepted as a knowledge dir via the orphan-directory exception.
+- The `DOMAIN_DIRS=(coding platform-engineering operations)` array drives which trees are validated; the orphan-directory check and the per-`SKILL.md` validation loop both iterate it. Add a new top-level domain to that array to extend coverage (and a missing domain dir is itself an error, so create the directory with a skill in the same change). A subdirectory with no `SKILL.md` but one or more `*-expertise.md` / `*-workflow.md` notes is accepted as a knowledge dir via the orphan-directory exception.
 - Each `err` call increments the error counter and exits non-zero at the end. New checks should follow the same `err`/`info` pattern so the summary line stays accurate.
 
 ### Testing Requirements
@@ -38,7 +38,7 @@ None.
 - `awk`, `grep`, `bash` — POSIX baseline.
 
 ### Internal
-- `../coding/**/SKILL.md` — every file walked by the validator.
+- `../coding/**/SKILL.md`, `../platform-engineering/**/SKILL.md`, `../operations/**/SKILL.md` — every file walked by the validator (one glob per `DOMAIN_DIRS` entry).
 - `../.github/workflows/validate-skills.yml` — CI invoker.
 
 <!-- MANUAL: -->

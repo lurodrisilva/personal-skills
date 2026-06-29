@@ -12,6 +12,7 @@ skill's "Subagent Orchestration" table:
 - **operator-development team** → `platform-engineering/kubernetes-operator-golang/SKILL.md`
 - **Crossplane team** → `platform-engineering/crossplane/SKILL.md`
 - **Dynatrace team** → `platform-engineering/dynatrace/SKILL.md`
+- **Kubernetes-operations team** → `operations/kubernetes-operations/SKILL.md`
 
 ## Key Files
 | File | Team | Description |
@@ -31,6 +32,11 @@ skill's "Subagent Orchestration" table:
 | `dynatrace-otel-ingest-engineer.md` | dynatrace | OTLP ingest, the Dynatrace Collector distro, delta temporality, enrichment |
 | `dynatrace-cloud-integrator.md` | dynatrace | `da-aws` connector, role + ExternalId, CloudFormation, monitoring-config API, legacy migration |
 | `dynatrace-monitoring-as-code.md` | dynatrace | Terraform provider + Monaco, Settings-2.0/dashboards/SLOs/alerting as code, GitOps |
+| `k8s-workload-troubleshooter.md` | k8s-ops | Pod-failure decision trees (CrashLoopBackOff/OOMKilled/Pending), rollouts, probes, graceful shutdown, `kubectl debug`, log/event triage |
+| `k8s-cluster-operator.md` | k8s-ops | resources/QoS, scheduling/placement, eviction, PDB/drain/cordon, version-skew upgrades, node maintenance |
+| `k8s-autoscaling-engineer.md` | k8s-ops | HPA (`autoscaling/v2`)/VPA/Cluster-Autoscaler/Karpenter/KEDA, metrics-server, capacity & cost |
+| `k8s-security-rbac.md` | k8s-ops | RBAC least-privilege, `auth can-i`, SA bound tokens, Pod Security Admission, `securityContext` hardening |
+| `k8s-network-storage.md` | k8s-ops | Services/EndpointSlices/DNS/NetworkPolicy/Ingress-Gateway + PV/PVC/StorageClass/CSI; reachability & PVC-pending trees |
 
 ## Subdirectories
 None.
@@ -50,7 +56,9 @@ None.
   scaffolder → designer → reconciler → tester → packager; crossplane:
   control-plane-operator → managed-resource-author → composition-author →
   package-publisher → tester; dynatrace: api-client → {dql-author |
-  otel-ingest-engineer | cloud-integrator} → monitoring-as-code).
+  otel-ingest-engineer | cloud-integrator} → monitoring-as-code; k8s-ops:
+  workload-troubleshooter → {cluster-operator | autoscaling-engineer |
+  security-rbac | network-storage}).
 - These agents are **repo-scoped** (see `../AGENTS.md`). If you add an agent, also
   add it to the owning skill's Subagent Orchestration table and that skill dir's
   `AGENTS.md` "Companion Subagents" section; if you rename one, update both sides.
@@ -74,6 +82,8 @@ None.
   team reads first and enforces.
 - `../../platform-engineering/dynatrace/SKILL.md` — the contract the Dynatrace
   team reads first and enforces.
+- `../../operations/kubernetes-operations/SKILL.md` — the contract the
+  Kubernetes-operations team reads first and enforces.
 
 ### External
 - Claude Code subagent runtime (loads `tools` / `model` from frontmatter).

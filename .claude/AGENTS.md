@@ -40,12 +40,13 @@ that ships first-class Claude Code artifacts other than `SKILL.md` files.
 ## Dependencies
 
 ### Internal
-- `agents/` — the subagent definitions (three teams: operator-development,
-  Crossplane, Dynatrace).
+- `agents/` — the subagent definitions (four teams: operator-development,
+  Crossplane, Dynatrace, Kubernetes-operations).
 - `../platform-engineering/kubernetes-operator-golang/SKILL.md` — drives the
   `operator-*` / `*-author` / `olm-packager` operator team.
 - `../platform-engineering/crossplane/SKILL.md` — drives the `crossplane-*` team.
 - `../platform-engineering/dynatrace/SKILL.md` — drives the `dynatrace-*` team.
+- `../operations/kubernetes-operations/SKILL.md` — drives the `k8s-*` Day-2 ops team.
   Each skill's "Subagent Orchestration" table maps its surfaces/phases → its agents.
 
 ### External

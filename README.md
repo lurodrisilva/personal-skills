@@ -35,6 +35,12 @@ A collection of **Claude Code skills** -- comprehensive reference guides that Cl
 | [kafka-load-test](platform-engineering/kafka-load-test/SKILL.md) | Kubernetes (`testing-system` namespace) | Load testing Kafka and Kafka-driven services — paired-tool methodology (`kafka-producer/consumer-perf-test.sh` for broker baselines + `k6 + xk6-kafka` for application-pipeline headlines), four-quadrant watch list, first-breach stop conditions, name-the-limiting-resource discipline | k6 + xk6-kafka v2 (`Producer` / `Consumer` / `AdminClient` / `SchemaRegistry`), CGO + librdkafka build (`grafana/xk6` builder or `mostafamoradian/xk6-kafka` image), `ramping-arrival-rate` scenarios, `kafka_writer_*` / `kafka_reader_*` thresholds, in-cluster `Job` execution, `setup()`-based race-free topic creation, post-run cleanup (topic delete, offset reset, synthetic-row drop) |
 | [aws-cli](platform-engineering/aws-cli/SKILL.md) | AWS (CLI v2) | AWS CLI usage for ad-hoc ops, Makefile glue, CI pipelines, EKS bootstraps — command-structure discipline, two-file config model, credential resolution order, JMESPath `--query`, `file://` vs `fileb://`, pagination, waiters, identity-first auth | AWS CLI v2, IAM Identity Center / SSO (`sso_session`), IRSA / EKS Pod Identity (`web_identity_token_file`), OIDC + `aws-actions/configure-aws-credentials@v4`, `credential_process`, JMESPath, `aws s3` vs `s3api`, `aws … wait` pollers, `--cli-input-json` + `--generate-cli-skeleton`, retry modes (`standard` / `adaptive`), endpoint overrides (`AWS_ENDPOINT_URL_<SERVICE>`), aliases, autoprompt |
 
+### Operations
+
+| Skill | Platform | Focus | Key Technologies |
+|-------|----------|-------|------------------|
+| [kubernetes-operations](operations/kubernetes-operations/SKILL.md) | Kubernetes (any distro) | **Operating / running** clusters and workloads (Day-2 / SRE) — incident triage, rollouts, capacity, scheduling, scaling, node maintenance & upgrades, security, networking, storage, observability. The **operate** counterpart to the build-focused `kubernetes-operator-golang` / `crossplane`. Leads with triage decision-trees; declarative-over-imperative, least-privilege, observe-before-scale. Orchestrated by 5 companion subagents in `.claude/agents/` | `kubectl` (describe/logs --previous/events/top/debug/rollout/drain/auth can-i), Pod-failure trees (CrashLoopBackOff / OOMKilled / Pending), requests/limits + QoS, `LimitRange` / `ResourceQuota`, affinity / taints / `topologySpreadConstraints` / `PriorityClass`, HPA (`autoscaling/v2`) / VPA / Cluster Autoscaler / Karpenter / KEDA + `metrics-server`, `PodDisruptionBudget` / drain / version-skew upgrades, RBAC + Pod Security Admission + `securityContext`, Services / EndpointSlices / CoreDNS / `NetworkPolicy` / Gateway API, PV/PVC / StorageClass / CSI |
+
 ## How It Works
 
 Skills are SKILL.md files that Claude Code can load into its context to provide domain-specific guidance. When Claude Code detects that a project matches a skill's description, it applies the encoded rules and patterns automatically.
@@ -56,6 +62,9 @@ coding/
 platform-engineering/
   <skill-name>/
     SKILL.md          # Skill definition (YAML frontmatter + markdown content)
+operations/
+  <skill-name>/
+    SKILL.md          # Skill definition (YAML frontmatter + markdown content)
 scripts/
   validate-skills.sh  # CI validation script
 .claude/
@@ -71,6 +80,7 @@ Skills are organized by domain:
 
 - `coding/` -- application-development skills (language, framework, or build-tooling guidance)
 - `platform-engineering/` -- infrastructure / DevOps / CI-CD / supply-chain skills
+- `operations/` -- Day-2 / SRE skills for **running** systems (e.g. `kubernetes-operations`)
 
 ## SKILL.md Format
 
@@ -107,6 +117,7 @@ Markdown content with architecture rules, patterns, and code examples.
 1. Pick the right domain directory:
    - `coding/` for application-development skills (language, framework, build tooling)
    - `platform-engineering/` for infrastructure, DevOps, CI/CD, or supply-chain skills
+   - `operations/` for Day-2 / SRE skills that **operate** running systems
 2. Create a subdirectory following the relevant naming convention:
    - `<language>-hex-clean` for hexagonal/clean architecture skills (e.g., `golang-hex-clean`)
    - `<domain>-<purpose>` for platform-engineering skills (e.g., `github-actions`)
@@ -121,7 +132,7 @@ Markdown content with architecture rules, patterns, and code examples.
 
 ### Validation Checks
 
-The CI pipeline runs on every push to `master` and every pull request, validating every `SKILL.md` under both `coding/` and `platform-engineering/`:
+The CI pipeline runs on every push to `master` and every pull request, validating every `SKILL.md` under `coding/`, `platform-engineering/`, and `operations/`:
 
 - Every directory under each domain must contain a `SKILL.md` (or, as a learner-friendly exception, one or more `*-expertise.md` / `*-workflow.md` notes)
 - Frontmatter must be valid YAML with all required fields (`name`, `description`, `license`, `compatibility`, `metadata`)
