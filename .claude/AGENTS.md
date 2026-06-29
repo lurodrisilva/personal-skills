@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-06-28 | Updated: 2026-06-28 -->
+<!-- Generated: 2026-06-28 | Updated: 2026-06-29 -->
 
 # .claude
 
@@ -40,9 +40,12 @@ that ships first-class Claude Code artifacts other than `SKILL.md` files.
 ## Dependencies
 
 ### Internal
-- `agents/` — the subagent definitions.
-- `../platform-engineering/kubernetes-operator-golang/SKILL.md` — the skill whose
-  "Subagent Orchestration" table currently drives every agent in `agents/`.
+- `agents/` — the subagent definitions (two teams: operator-development +
+  Crossplane).
+- `../platform-engineering/kubernetes-operator-golang/SKILL.md` — drives the
+  `operator-*` / `*-author` / `olm-packager` operator team.
+- `../platform-engineering/crossplane/SKILL.md` — drives the `crossplane-*` team.
+  Each skill's "Subagent Orchestration" table maps its phases → its agents.
 
 ### External
 - Claude Code — the runtime that loads subagent definitions from `.claude/agents/`.
