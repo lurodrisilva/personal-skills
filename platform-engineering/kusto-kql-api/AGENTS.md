@@ -41,7 +41,7 @@ None.
 
 ### Internal
 - `../../README.md` — references this skill in the "Platform Engineering" table.
-- `../../scripts/validate-skills.sh` — *currently does not validate this file*; expanding the validator is a tracked follow-up in `CLAUDE.md`.
+- `../../scripts/validate-skills.sh` — validates this file (its `DOMAIN_DIRS` includes `platform-engineering/`); CI runs it on every push and PR.
 - `../azure-pg-flex/SKILL.md` — sibling Azure-observability skill; both reference the Log Analytics REST surface but from different angles (PG-Flex-specific KQL recipes vs the generic Kusto API mechanics here). Cross-reference rather than duplicate.
 
 ### External

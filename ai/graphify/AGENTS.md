@@ -37,7 +37,7 @@ None.
 ### Internal
 - `../AGENTS.md` — `ai/` domain overview and the manual-validation procedure for this tree.
 - `../../README.md` — should list this skill (no `ai/` table row yet; tracked).
-- `../../scripts/validate-skills.sh` — *currently does not validate this file*; expanding the validator to cover all domains is a tracked follow-up.
+- `../../scripts/validate-skills.sh` — does not validate this file; its `DOMAIN_DIRS` covers `coding/` and `platform-engineering/`, not `ai/`. Validate manually (or add `ai` to `DOMAIN_DIRS` to opt in).
 
 ### External
 None at runtime — this is documentation, not code. (The documented tool itself is the PyPI `graphifyy` package + optional Docker MCP SQLite server.)

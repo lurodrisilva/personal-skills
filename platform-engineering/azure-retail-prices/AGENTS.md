@@ -37,7 +37,7 @@ None.
 
 ### Internal
 - `../../README.md` — references this skill in the "Platform Engineering" table.
-- `../../scripts/validate-skills.sh` — *currently does not validate this file*; expanding the validator is a tracked follow-up.
+- `../../scripts/validate-skills.sh` — validates this file (its `DOMAIN_DIRS` includes `platform-engineering/`); CI runs it on every push and PR.
 - `../azure-pg-flex/SKILL.md` — sibling whose Azure observability discipline complements the FinOps surface.
 - `../kusto-kql-api/SKILL.md` — sibling for the analogous "telemetry-query API" discipline (paginate, version, parse-fail-loudly).
 - `../addons-and-building-blocks/SKILL.md` — sibling for App-of-Apps deployment that a pricing-snapshot cron might ship under.

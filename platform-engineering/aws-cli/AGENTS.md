@@ -37,7 +37,7 @@ None.
 
 ### Internal
 - `../../README.md` — references this skill in the "Platform Engineering" table.
-- `../../scripts/validate-skills.sh` — *currently does not validate this file*; expanding the validator is a tracked follow-up.
+- `../../scripts/validate-skills.sh` — validates this file (its `DOMAIN_DIRS` includes `platform-engineering/`); CI runs it on every push and PR.
 - `../addons-and-building-blocks/SKILL.md` — sibling whose AKS bootstrap pattern is analogous to `aws eks update-kubeconfig`.
 - `../github-actions/SKILL.md` — sibling whose OIDC-federation rules align with `aws-actions/configure-aws-credentials@v4`.
 - `../azure-retail-prices/SKILL.md` — sibling for analogous public-API discipline on a different cloud.

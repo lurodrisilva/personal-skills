@@ -42,7 +42,7 @@ None.
 
 ### Internal
 - `../../README.md` — references this skill in the "Platform Engineering" table.
-- `../../scripts/validate-skills.sh` — *currently does not validate this file*; expanding the validator is a tracked follow-up in `CLAUDE.md`.
+- `../../scripts/validate-skills.sh` — validates this file (its `DOMAIN_DIRS` includes `platform-engineering/`); CI runs it on every push and PR.
 
 ### External
 None at runtime — this is documentation, not code. The skill *describes* usage of `az`, `az rest`, `jq`, Azure Monitor REST API (`api-version=2023-10-01`), `metrics:getBatch` (regional data-plane endpoint), Log Analytics KQL, and PG Flex server parameters, but ships no executable artifacts.
