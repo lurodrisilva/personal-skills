@@ -53,9 +53,9 @@ Conventions observed across the existing skills (keep them when adding new ones)
 - `description:` opens with `MUST USE when …` and enumerates the trigger phrases / file patterns that should activate the skill. This string is what Claude Code / opencode matches on for auto-loading, so be specific and exhaustive.
 - Body structure: non-negotiable rules first, then layer-by-layer patterns with concrete code examples, closing with an anti-patterns table and a pre-done verification checklist.
 
-## Known gap — validator coverage
+## Validator coverage
 
-`scripts/validate-skills.sh` walks **only** `coding/` (see `CODING_DIR="$REPO_ROOT/coding"` and both validation loops). `platform-engineering/**/SKILL.md` is **not** covered by CI today — edits there can regress the contract without the job failing. Expanding the validator to cover all domain directories is a tracked follow-up; until then, run the validator pointed at a copy, or manually re-check frontmatter / fenced-block balance for platform-engineering changes.
+`scripts/validate-skills.sh` walks every domain in the `DOMAIN_DIRS` array — currently `coding/` and `platform-engineering/`. Add new top-level domain directories to that array as the repo grows. The orphan-directory check accepts an exception: a directory that has no `SKILL.md` but contains one or more `*-expertise.md` / `*-workflow.md` files is treated as a learner-style knowledge directory rather than a malformed skill.
 
 ## Conventions
 
