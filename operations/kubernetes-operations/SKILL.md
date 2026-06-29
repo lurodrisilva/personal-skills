@@ -27,13 +27,15 @@ description: >-
   hardening; Service types / headless / EndpointSlices / kube-proxy
   (iptables/IPVS/nftables) / CoreDNS `ndots:5` / `NetworkPolicy` default-deny /
   Ingress vs Gateway API; PV/PVC lifecycle, StorageClass, reclaim
-  Retain/Delete, access modes RWO/ROX/RWX/RWOP, volume expansion, CSI; and the
+  Retain/Delete, access modes RWO/ROX/RWX/RWOP, volume expansion, CSI; backup &
+  disaster recovery (etcd snapshot/restore, CSI `VolumeSnapshot`, Velero); and the
   "service not reachable" / "PVC Pending" / "node NotReady" decision trees.
   Triggers on phrases — "kubectl", "pod crashing", "CrashLoopBackOff",
   "OOMKilled", "pod pending", "rollout stuck", "drain node", "node NotReady",
   "hpa not scaling", "pod can't be scheduled", "service not reachable", "PVC
   pending", "RBAC forbidden", "kubectl top", "cordon", "PodDisruptionBudget",
-  "cluster upgrade", "version skew". Triggers on file patterns — Pod/Deployment/
+  "cluster upgrade", "version skew", "etcd backup", "volume snapshot", "velero",
+  "disaster recovery". Triggers on file patterns — Pod/Deployment/
   StatefulSet/DaemonSet/Job manifests, `NetworkPolicy` / `PodDisruptionBudget` /
   `HorizontalPodAutoscaler` / `ResourceQuota` / `LimitRange` / RBAC YAML,
   kubeconfig files. This skill is for **running** clusters — to BUILD a custom
@@ -49,7 +51,7 @@ metadata:
   domain: operations
   pattern: day2-operations
   platform: kubernetes
-  surfaces: workload-triage, rollouts, resources-qos, scheduling, autoscaling, disruptions-upgrades, rbac-podsecurity, networking, storage, observability
+  surfaces: workload-triage, rollouts, resources-qos, scheduling, autoscaling, disruptions-upgrades, rbac-podsecurity, networking, storage, backup-dr, observability
   use_cases: incident-response, capacity-management, cluster-maintenance, security-hardening
 ---
 
@@ -494,6 +496,41 @@ spec:
 
 ---
 
+## PHASE K — BACKUP & DISASTER RECOVERY
+
+A backup you have never restored is a hope, not a backup. Two layers:
+
+- **Cluster state — etcd.** etcd holds all API objects; losing it loses the
+  cluster. Snapshot regularly and **off-cluster**, and rehearse restore:
+
+```bash
+ETCDCTL_API=3 etcdctl snapshot save snap.db \
+  --endpoints=https://127.0.0.1:2379 \
+  --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+  --cert=/etc/kubernetes/pki/etcd/server.crt \
+  --key=/etc/kubernetes/pki/etcd/server.key
+etcdctl snapshot status snap.db -w table        # verify before trusting it
+# restore: etcdctl snapshot restore snap.db --data-dir /var/lib/etcd-restore
+# then point the etcd static Pod at the new data dir and restart the control plane
+```
+
+> Managed control planes (EKS/GKE/AKS) own etcd — you can't `etcdctl` it; rely on
+> the provider's control-plane backup + object-level backup below.
+
+- **Workloads & data — objects + volumes.** Back up namespaced objects and PV
+  data with **Velero** (`velero backup create`, schedules, restore), which can
+  trigger **CSI `VolumeSnapshot`** via a `VolumeSnapshotClass` for crash-consistent
+  volume copies. For databases, prefer app-aware backups (the DB's own dump/PITR)
+  over raw volume snapshots.
+- **DR drills:** periodically restore into a scratch namespace/cluster and verify
+  the app comes up — an untested restore is the most common DR failure. Keep
+  manifests in Git (declarative recovery), but Git does **not** back up PV **data**
+  or etcd — those need the steps above.
+- **Ownership:** etcd/control-plane DR → `k8s-cluster-operator`; volume snapshots /
+  Velero → `k8s-network-storage`.
+
+---
+
 ## ANTI-PATTERNS (each one fails review)
 
 | Anti-pattern | Why it breaks | Do instead |
@@ -511,6 +548,7 @@ spec:
 | `cluster-admin` / long-lived SA token for a workload | Excess blast radius | Scoped RBAC + bound projected tokens |
 | No NetworkPolicy (flat network) | Lateral movement | Default-deny + explicit allows |
 | `reclaimPolicy: Delete` on stateful data | PVC delete wipes storage | `Retain` for data you can't lose |
+| "Backups" that are never test-restored (or Git as the only "backup") | Restore fails when you need it; Git holds manifests, not etcd/PV data | Snapshot etcd + volumes off-cluster; rehearse restore in a scratch namespace |
 | Pinning a Kubernetes minor version in docs/manifests as "current" | Rots fast | State behavior; verify against the live cluster + kubespec.dev |
 
 ---
@@ -537,6 +575,9 @@ spec:
 
 **Networking/storage**
 - [ ] Endpoints/selectors verified for reachability; default-deny NetworkPolicy where required; reclaim policy correct; access mode matches replica topology.
+
+**Backup/DR**
+- [ ] etcd snapshotted off-cluster (or provider-managed); PV data + objects backed up (Velero / CSI `VolumeSnapshot`); a restore has actually been rehearsed.
 
 ---
 

@@ -16,7 +16,7 @@ reachable / PVC-Pending). The first skill in the `operations/` domain.
 ## Key Files
 | File | Description |
 |------|-------------|
-| `SKILL.md` | The skill definition — `name: kubernetes-operations`, `domain: operations`, `pattern: day2-operations`, `platform: kubernetes`, `surfaces: workload-triage, rollouts, resources-qos, scheduling, autoscaling, disruptions-upgrades, rbac-podsecurity, networking, storage, observability` |
+| `SKILL.md` | The skill definition — `name: kubernetes-operations`, `domain: operations`, `pattern: day2-operations`, `platform: kubernetes`, `surfaces: workload-triage, rollouts, resources-qos, scheduling, autoscaling, disruptions-upgrades, rbac-podsecurity, networking, storage, backup-dr, observability` |
 
 ## Subdirectories
 None.

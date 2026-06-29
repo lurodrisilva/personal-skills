@@ -33,6 +33,10 @@ read it first.
   volume expansion (`allowVolumeExpansion`), CSI.
 - Run the **"PVC Pending / won't mount" tree:** describe pvc → StorageClass →
   Multi-Attach (RWO still attached) → CSI controller/node logs + fsGroup/SELinux.
+- **Data backup/DR:** back up namespaced objects + PV data with **Velero** and
+  crash-consistent **CSI `VolumeSnapshot`** (`VolumeSnapshotClass`); prefer
+  app-aware DB backups over raw snapshots; rehearse restore (Phase K). Hands
+  etcd/control-plane DR to k8s-cluster-operator.
 
 ## What you do NOT do
 - You don't author RBAC/Pod-security (→ k8s-security-rbac), triage app crashes
