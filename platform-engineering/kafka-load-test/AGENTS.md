@@ -38,7 +38,7 @@ None.
 
 ### Internal
 - `../../README.md` — references this skill in the "Platform Engineering" table.
-- `../../scripts/validate-skills.sh` — *currently does not validate this file*; expanding the validator is a tracked follow-up.
+- `../../scripts/validate-skills.sh` — validates this file (its `DOMAIN_DIRS` includes `platform-engineering/`); CI runs it on every push and PR.
 - `../kafka-strimzi-operator/SKILL.md` — sibling whose `BrokerCapacity` + `KafkaNodePool` decisions govern the ceiling this skill measures.
 - `../addons-and-building-blocks/SKILL.md` — sibling that ships Kafka itself + the `testing-system` namespace where this skill's `Job` runs.
 

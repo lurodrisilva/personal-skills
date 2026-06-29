@@ -42,7 +42,7 @@ None at this level — all content lives in subdirectories.
 ## Dependencies
 
 ### Internal
-- `../scripts/validate-skills.sh` — does **not** yet validate this tree (tracked follow-up); validate manually.
+- `../scripts/validate-skills.sh` — does **not** validate this tree; its `DOMAIN_DIRS` covers `coding/` and `platform-engineering/`, not `ai/`. Validate manually (or add `ai` to `DOMAIN_DIRS` to opt in).
 - `../README.md` — should reference skills in this domain; add a row when a new skill lands.
 - `../CLAUDE.md` — authoritative SKILL.md contract and repo layout.
 

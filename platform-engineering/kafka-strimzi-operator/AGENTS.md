@@ -41,7 +41,7 @@ None.
 
 ### Internal
 - `../../README.md` — references this skill in the "Platform Engineering" table when listed; rename → README update required.
-- `../../scripts/validate-skills.sh` — *currently does not validate this file*; expanding the validator is a tracked follow-up (`CLAUDE.md`).
+- `../../scripts/validate-skills.sh` — validates this file (its `DOMAIN_DIRS` includes `platform-engineering/`); CI runs it on every push and PR.
 - `../addons-and-building-blocks/SKILL.md` — parent platform-blueprint skill. The Strimzi Cluster Operator is delivered as a baseline addon under that blueprint (Helm OCI chart, sync wave 2 — after CRDs, before `Kafka` CRs); rules in this skill must not contradict the parent's layer-cake / OCI / four-tier-gate doctrine.
 - `../azure-pg-flex/SKILL.md` — sibling skill that established the 60–80% saturation-band + double-per-step tier-ladder methodology. This skill applies the same doctrine to Kafka's four limiting resources so cross-engine bottleneck rankings stay comparable.
 
