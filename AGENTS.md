@@ -21,6 +21,7 @@ Distribution repository for **Claude Code / opencode skills**. Each leaf directo
 | `platform-engineering/` | Infrastructure, DevOps, CI/CD, supply-chain, observability skills (see `platform-engineering/AGENTS.md`) |
 | `operations/` | Day-2 / SRE skills for **operating** running systems — e.g. `kubernetes-operations` (see `operations/AGENTS.md`) |
 | `security/` | Security / hardening / threat-model skills — e.g. `kubernetes-security` (ships read-only audit scripts under `tools/`) (see `security/AGENTS.md`) |
+| `networking/` | Networking-plane skills — the CNI / dataplane / routing / network-policy mechanics, e.g. `kubernetes-networking` (Calico) (see `networking/AGENTS.md`) |
 | `scripts/` | Local + CI validation tooling for SKILL.md (see `scripts/AGENTS.md`) |
 | `omc-learned/` | Single-insight expertise notes captured by `/oh-my-claudecode:learner` — staging ground for future SKILL.md promotion; not loaded by validator (see `omc-learned/AGENTS.md`) |
 | `.claude/` | Repo-scoped Claude Code config — committed subagent definitions that skills orchestrate, plus local-only settings (see `.claude/AGENTS.md`) |
@@ -30,7 +31,7 @@ Distribution repository for **Claude Code / opencode skills**. Each leaf directo
 
 ### Working In This Directory
 - Almost every change is authoring or editing a `SKILL.md`. There is no application code, no build, no test runner.
-- Adding a skill requires picking the correct domain directory **first** (`coding/` vs `platform-engineering/` vs `operations/` vs `security/` — build skills vs infra skills vs Day-2/run-it skills vs secure/harden/threat-model skills), then a kebab-case sub-directory, then a `SKILL.md` matching the contract documented in `CLAUDE.md`.
+- Adding a skill requires picking the correct domain directory **first** (`coding/` vs `platform-engineering/` vs `operations/` vs `security/` vs `networking/` — build skills vs infra skills vs Day-2/run-it skills vs secure/harden/threat-model skills vs networking-plane/CNI skills), then a kebab-case sub-directory, then a `SKILL.md` matching the contract documented in `CLAUDE.md`.
 - Directory names are stable references — `README.md` tables and external docs link to them. Do not rename a skill directory without updating `README.md`.
 - The frontmatter `name:` field is independent of the directory name (e.g. `coding/dotnet-hex-clean/` declares `name: dotnet-clean-arch`). Both forms are valid.
 
@@ -38,7 +39,7 @@ Distribution repository for **Claude Code / opencode skills**. Each leaf directo
 - Run `./scripts/validate-skills.sh` before every push.
 - Exit code = error count; CI runs the same script via `.github/workflows/validate-skills.yml`.
 - The validator requires `yq` on `PATH` (Mike Farah's Go implementation, same binary as `mikefarah/yq@master` in CI).
-- **Validator coverage:** the validator walks every domain in its `DOMAIN_DIRS` array — currently `coding/`, `platform-engineering/`, `operations/`, **and** `security/`. All four are CI-checked on every push and PR. `ai/`, `omc-learned/`, and `scripts/` are **not** walked — manually re-check frontmatter validity and fenced-block balance when editing a `SKILL.md` outside the covered domains. Add a new top-level domain to `DOMAIN_DIRS` to extend coverage.
+- **Validator coverage:** the validator walks every domain in its `DOMAIN_DIRS` array — currently `coding/`, `platform-engineering/`, `operations/`, `security/`, **and** `networking/`. All five are CI-checked on every push and PR. `ai/`, `omc-learned/`, and `scripts/` are **not** walked — manually re-check frontmatter validity and fenced-block balance when editing a `SKILL.md` outside the covered domains. Add a new top-level domain to `DOMAIN_DIRS` to extend coverage.
 
 ### Common Patterns
 - `license: BSD-3-Clause` on every SKILL.md (matches root `LICENSE`).

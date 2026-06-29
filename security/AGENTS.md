@@ -11,8 +11,8 @@ controls exist, *how* they fail, and the attack chains they block — distinct f
 day-to-day operation. Each subdirectory ships one `SKILL.md` (and may ship
 read-only audit scripts under a `tools/` subdir). **This directory IS
 CI-validated:** `scripts/validate-skills.sh` walks every domain in its
-`DOMAIN_DIRS` array — `coding/`, `platform-engineering/`, `operations/`, and
-`security/` — on every push and PR.
+`DOMAIN_DIRS` array — `coding/`, `platform-engineering/`, `operations/`,
+`security/`, and `networking/` — on every push and PR.
 
 ## Key Files
 None at this level — all content lives in subdirectories.

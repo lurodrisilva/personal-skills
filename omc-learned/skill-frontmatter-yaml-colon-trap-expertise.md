@@ -28,7 +28,7 @@ Three things go wrong when you don't know this:
 
 2. **The trap re-emerges on every long description.** Skills in `personal-skills/` and `~/.claude/skills/` use deliberately exhaustive descriptions (hundreds of trigger phrases, often with code-shaped examples). Every new skill is one re-spelling of `entityOperator: { ... }` away from breaking the validator.
 
-3. **CI may not catch it everywhere.** `personal-skills/scripts/validate-skills.sh` walks only the `DOMAIN_DIRS` trees (now `coding/`, `platform-engineering/`, `operations/`, `security/`). A broken `SKILL.md` **outside** those domains (e.g. `ai/`, `omc-learned/`) ships green and only fails when something downstream actually parses the frontmatter (skill loader, opencode auto-detection). Validate those manually with the `yq '.description | type'` check.
+3. **CI may not catch it everywhere.** `personal-skills/scripts/validate-skills.sh` walks only the `DOMAIN_DIRS` trees (now `coding/`, `platform-engineering/`, `operations/`, `security/`, `networking/`). A broken `SKILL.md` **outside** those domains (e.g. `ai/`, `omc-learned/`) ships green and only fails when something downstream actually parses the frontmatter (skill loader, opencode auto-detection). Validate those manually with the `yq '.description | type'` check.
 
 ## Recognition Pattern
 

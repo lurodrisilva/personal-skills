@@ -25,7 +25,7 @@ None.
 - The `triggers:` list IS the auto-detection surface — extend it when a near-miss session would have benefited from the note firing.
 
 ### Testing Requirements
-- `scripts/validate-skills.sh` does **NOT** walk this directory — its `DOMAIN_DIRS` covers `coding/`, `platform-engineering/`, `operations/`, and `security/`, not `omc-learned/`. Frontmatter correctness is enforced manually:
+- `scripts/validate-skills.sh` does **NOT** walk this directory — its `DOMAIN_DIRS` covers `coding/`, `platform-engineering/`, `operations/`, `security/`, and `networking/`, not `omc-learned/`. Frontmatter correctness is enforced manually:
   1. Frontmatter is a valid YAML map containing at minimum `name` and `description`.
   2. Body after the closing `---` is non-empty.
 - These files are reference material — there is no build, no render, no consumer that would catch a broken trigger list automatically.
