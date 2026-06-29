@@ -11,6 +11,7 @@ system prompt. Agents are grouped into **per-skill teams**, each driven by that
 skill's "Subagent Orchestration" table:
 - **operator-development team** → `platform-engineering/kubernetes-operator-golang/SKILL.md`
 - **Crossplane team** → `platform-engineering/crossplane/SKILL.md`
+- **Dynatrace team** → `platform-engineering/dynatrace/SKILL.md`
 
 ## Key Files
 | File | Team | Description |
@@ -25,6 +26,11 @@ skill's "Subagent Orchestration" table:
 | `crossplane-package-publisher.md` | crossplane | Provider/Configuration/Function packages, `crossplane.yaml`, `xpkg build/push`, ImageConfig signing |
 | `crossplane-control-plane-operator.md` | crossplane | install, Providers, credentials/workload identity, GitOps (ArgoCD/Flux) delivery, troubleshooting |
 | `crossplane-tester.md` | crossplane | `crossplane render`/`validate`/`beta trace`, CI gate |
+| `dynatrace-api-client.md` | dynatrace | plane/credential selection, tokens, Environment API v2, Settings 2.0, `nextPageKey` pagination, rate limits |
+| `dynatrace-dql-author.md` | dynatrace | DQL/Grail pipelines, `timeseries`, the `query:execute`/`poll` API, `storage:*` scopes (model=opus for complex queries) |
+| `dynatrace-otel-ingest-engineer.md` | dynatrace | OTLP ingest, the Dynatrace Collector distro, delta temporality, enrichment |
+| `dynatrace-cloud-integrator.md` | dynatrace | `da-aws` connector, role + ExternalId, CloudFormation, monitoring-config API, legacy migration |
+| `dynatrace-monitoring-as-code.md` | dynatrace | Terraform provider + Monaco, Settings-2.0/dashboards/SLOs/alerting as code, GitOps |
 
 ## Subdirectories
 None.
@@ -43,7 +49,8 @@ None.
   "what you do NOT do" hand-offs so each team stays composable (operator:
   scaffolder → designer → reconciler → tester → packager; crossplane:
   control-plane-operator → managed-resource-author → composition-author →
-  package-publisher → tester).
+  package-publisher → tester; dynatrace: api-client → {dql-author |
+  otel-ingest-engineer | cloud-integrator} → monitoring-as-code).
 - These agents are **repo-scoped** (see `../AGENTS.md`). If you add an agent, also
   add it to the owning skill's Subagent Orchestration table and that skill dir's
   `AGENTS.md` "Companion Subagents" section; if you rename one, update both sides.
@@ -64,6 +71,8 @@ None.
 - `../../platform-engineering/kubernetes-operator-golang/SKILL.md` — the contract
   the operator team reads first and enforces.
 - `../../platform-engineering/crossplane/SKILL.md` — the contract the Crossplane
+  team reads first and enforces.
+- `../../platform-engineering/dynatrace/SKILL.md` — the contract the Dynatrace
   team reads first and enforces.
 
 ### External
