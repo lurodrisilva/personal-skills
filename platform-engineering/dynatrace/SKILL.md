@@ -21,12 +21,21 @@ description: >-
   HTTP/protobuf only, delta temporality), the Dynatrace OpenTelemetry Collector
   distribution, the agentless role-based **AWS** connector (`da-aws` extension,
   cross-account IAM role + ExternalId), and monitoring-as-code with the
-  `dynatrace-oss/dynatrace` Terraform provider or Monaco. Triggers on phrases —
+  `dynatrace-oss/dynatrace` Terraform provider or Monaco. Also covers the
+  **agent-facing MCP server surface** (Platform-token/Bearer plane, NOT the
+  Classic Api-Token): the hosted MCP gateway (`mcp-gateway:servers:read`/`:invoke`
+  scopes, OAuth-not-supported-on-remote) vs the OSS local `dynatrace-oss/dynatrace-mcp`,
+  the tool set (`execute_dql` / `verify_dql`, `list_problems` / `list_vulnerabilities`,
+  `get_kubernetes_events`, **Davis CoPilot** `chat_with_davis_copilot`, write-side
+  `send_*`), the `execute_dql` Grail-cost warning, and the Azure SRE Agent partner
+  connector. Triggers on phrases —
   "dynatrace api", "dynatrace token", "Api-Token", "platform token", "DQL",
   "dynatrace query language", "grail", "fetch logs", "timeseries", "dynatrace
   otlp", "send opentelemetry to dynatrace", "dynatrace collector", "dynatrace aws
   connection", "da-aws", "settings 2.0", "monaco", "dynatrace terraform",
-  "nextPageKey". Triggers on file patterns — `**/monaco/**`, `**/*.monaco.yaml`,
+  "nextPageKey", "dynatrace mcp", "dynatrace-mcp-server", "mcp-gateway",
+  "execute_dql", "Davis CoPilot", "agentic dynatrace access". Triggers on file
+  patterns — `**/monaco/**`, `**/*.monaco.yaml`,
   YAML/JSON with `com.dynatrace.extension.da-aws` / `Api-Token dt0c01` /
   `apps.dynatrace.com/platform`, OTel collector configs exporting to
   `*.live.dynatrace.com/api/v2/otlp`, Terraform using the `dynatrace` provider.
