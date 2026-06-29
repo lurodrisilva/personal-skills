@@ -37,7 +37,8 @@ None.
 
 ### Internal
 - `../../README.md` — references this skill in the "Platform Engineering" table.
-- `../../scripts/validate-skills.sh` — *currently does not validate this file*; expanding the validator is a tracked follow-up.
+- `../../scripts/validate-skills.sh` — validates this file (its `DOMAIN_DIRS` includes `platform-engineering/`); CI runs it on every push and PR.
+- `../crossplane/SKILL.md` — sibling skill about **building** a Crossplane control plane (XRDs, Compositions, functions, packages). This skill only **consumes** provider-shipped Managed Resources inside Helm building blocks; defer Crossplane authoring guidance there.
 
 ### External
 None at runtime — this is documentation, not code.
