@@ -4,7 +4,7 @@
 # platform-engineering
 
 ## Purpose
-Infrastructure / DevOps / CI-CD / supply-chain / observability skills — Claude Code / opencode auto-loads them when a project matches their description. Each subdirectory contains a `SKILL.md` (some also ship a companion expertise note alongside, or a companion subagent team under `../.claude/agents/`). **This directory IS CI-validated:** `scripts/validate-skills.sh` walks every domain in its `DOMAIN_DIRS` array — currently `coding/`, `platform-engineering/`, and `operations/` — on every push and PR.
+Infrastructure / DevOps / CI-CD / supply-chain / observability skills — Claude Code / opencode auto-loads them when a project matches their description. Each subdirectory contains a `SKILL.md` (some also ship a companion expertise note alongside, or a companion subagent team under `../.claude/agents/`). **This directory IS CI-validated:** `scripts/validate-skills.sh` walks every domain in its `DOMAIN_DIRS` array — currently `coding/`, `platform-engineering/`, `operations/`, and `security/` — on every push and PR.
 
 ## Key Files
 None at this level — all content lives in subdirectories.

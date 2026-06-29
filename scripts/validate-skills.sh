@@ -5,7 +5,7 @@ set -euo pipefail
 # Exit code = number of errors found (0 = all OK).
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-DOMAIN_DIRS=(coding platform-engineering operations)
+DOMAIN_DIRS=(coding platform-engineering operations security)
 errors=0
 
 err() {

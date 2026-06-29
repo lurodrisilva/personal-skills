@@ -13,6 +13,7 @@ skill's "Subagent Orchestration" table:
 - **Crossplane team** → `platform-engineering/crossplane/SKILL.md`
 - **Dynatrace team** → `platform-engineering/dynatrace/SKILL.md`
 - **Kubernetes-operations team** → `operations/kubernetes-operations/SKILL.md`
+- **Kubernetes-security team** → `security/kubernetes-security/SKILL.md`
 
 ## Key Files
 | File | Team | Description |
@@ -37,6 +38,11 @@ skill's "Subagent Orchestration" table:
 | `k8s-autoscaling-engineer.md` | k8s-ops | HPA (`autoscaling/v2`)/VPA/Cluster-Autoscaler/Karpenter/KEDA, metrics-server, capacity & cost |
 | `k8s-security-rbac.md` | k8s-ops | RBAC least-privilege, `auth can-i`, SA bound tokens, Pod Security Admission, `securityContext` hardening |
 | `k8s-network-storage.md` | k8s-ops | Services/EndpointSlices/DNS/NetworkPolicy/Ingress-Gateway + PV/PVC/StorageClass/CSI; reachability & PVC-pending trees |
+| `k8s-cluster-hardener.md` | k8s-security | control plane / kubelet / node hardening, etcd encryption, secrets stores, CIS / kube-bench, audit logging |
+| `k8s-rbac-iam-auditor.md` | k8s-security | least-privilege RBAC, dangerous verbs (escalate/bind/impersonate), SA tokens, OIDC/Entra, multi-tenancy |
+| `k8s-supplychain-admission.md` | k8s-security | scan/sign/SLSA, PSA + securityContext, ValidatingAdmissionPolicy / Gatekeeper / Kyverno, CI policy-as-code |
+| `k8s-network-zerotrust.md` | k8s-security | default-deny NetworkPolicy, Calico/Cilium microsegmentation, mTLS/mesh, egress control |
+| `k8s-runtime-threat.md` | k8s-security | Falco/Tetragon (eBPF) detection+enforcement, drift prevention, CNAPP, incident response |
 
 ## Subdirectories
 None.
@@ -58,7 +64,9 @@ None.
   package-publisher → tester; dynatrace: api-client → {dql-author |
   otel-ingest-engineer | cloud-integrator} → monitoring-as-code; k8s-ops:
   workload-troubleshooter → {cluster-operator | autoscaling-engineer |
-  security-rbac | network-storage}).
+  security-rbac | network-storage}; k8s-security: threat-model → {cluster-hardener
+  | rbac-iam-auditor | supplychain-admission | network-zerotrust |
+  runtime-threat}, layered for defense in depth).
 - These agents are **repo-scoped** (see `../AGENTS.md`). If you add an agent, also
   add it to the owning skill's Subagent Orchestration table and that skill dir's
   `AGENTS.md` "Companion Subagents" section; if you rename one, update both sides.
@@ -84,6 +92,8 @@ None.
   team reads first and enforces.
 - `../../operations/kubernetes-operations/SKILL.md` — the contract the
   Kubernetes-operations team reads first and enforces.
+- `../../security/kubernetes-security/SKILL.md` — the contract the
+  Kubernetes-security team reads first and enforces.
 
 ### External
 - Claude Code subagent runtime (loads `tools` / `model` from frontmatter).
