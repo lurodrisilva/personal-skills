@@ -4,7 +4,7 @@
 # ai
 
 ## Purpose
-AI-tooling skills — guidance for tools that AI coding assistants drive or integrate with (knowledge-graph builders, MCP servers, agent-facing CLIs). Each subdirectory contains exactly one `SKILL.md` that Claude Code / opencode auto-loads when a project matches the skill's `description`. This is a domain directory parallel to `coding/`, `platform-engineering/`, and `operations/`.
+AI-tooling skills — guidance for tools that AI coding assistants drive or integrate with (knowledge-graph builders, MCP servers, agent-facing CLIs). Each subdirectory contains exactly one `SKILL.md` that Claude Code / opencode auto-loads when a project matches the skill's `description`. This is a domain directory parallel to `coding/`, `platform-engineering/`, `operations/`, and `security/`.
 
 ## Key Files
 None at this level — all content lives in subdirectories.
@@ -23,7 +23,7 @@ None at this level — all content lives in subdirectories.
 - `description:` opens with `MUST USE when …` and exhaustively lists trigger phrases / file patterns — this is what auto-detection matches on.
 
 ### Testing Requirements
-- **`scripts/validate-skills.sh` does NOT walk this directory** — its `DOMAIN_DIRS` covers `coding/`, `platform-engineering/`, and `operations/`, not `ai/`. After editing any SKILL.md here, manually verify:
+- **`scripts/validate-skills.sh` does NOT walk this directory** — its `DOMAIN_DIRS` covers `coding/`, `platform-engineering/`, `operations/`, and `security/`, not `ai/`. After editing any SKILL.md here, manually verify:
   1. YAML frontmatter parses and contains `name`, `description`, `license`, `compatibility`, non-empty `metadata` map.
   2. Markdown body after the closing `---` is non-empty.
   3. Fenced code-block markers are even in count.
@@ -42,7 +42,7 @@ None at this level — all content lives in subdirectories.
 ## Dependencies
 
 ### Internal
-- `../scripts/validate-skills.sh` — does **not** validate this tree; its `DOMAIN_DIRS` covers `coding/`, `platform-engineering/`, and `operations/`, not `ai/`. Validate manually (or add `ai` to `DOMAIN_DIRS` to opt in).
+- `../scripts/validate-skills.sh` — does **not** validate this tree; its `DOMAIN_DIRS` covers `coding/`, `platform-engineering/`, `operations/`, and `security/`, not `ai/`. Validate manually (or add `ai` to `DOMAIN_DIRS` to opt in).
 - `../README.md` — should reference skills in this domain; add a row when a new skill lands.
 - `../CLAUDE.md` — authoritative SKILL.md contract and repo layout.
 
