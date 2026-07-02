@@ -1,7 +1,7 @@
 # personal-skills
 
 [![Validate Skills](https://github.com/lurodrisilva/personal-skills/actions/workflows/validate-skills.yml/badge.svg)](https://github.com/lurodrisilva/personal-skills/actions/workflows/validate-skills.yml)
-[![Skills](https://img.shields.io/badge/skills-26-blue)](#available-skills)
+[![Skills](https://img.shields.io/badge/skills-27-blue)](#available-skills)
 
 A collection of **Claude Code skills** -- comprehensive reference guides that Claude Code loads when working on projects matching specific technology patterns. Each skill encodes architectural rules, coding conventions, and framework-specific guidance for a technology stack.
 
@@ -41,6 +41,7 @@ A collection of **Claude Code skills** -- comprehensive reference guides that Cl
 | [azure-retail-prices](platform-engineering/azure-retail-prices/SKILL.md) | Azure (Retail Prices REST API) | Programmatic reads of the public Azure Retail Prices REST API — the anonymous (no-auth) endpoint contract, the two API versions, `NextPageLink` pagination, case-sensitive `$filter`, and USD-only billing reconciliation | `prices.azure.com/api/retail/prices`, anonymous endpoint, `api-version` (stable vs `2023-01-01-preview`), OData `$filter` (case-sensitive), `NextPageLink` pagination to `null`, `meterId` / `armRegionName` / `unitPrice`, savings-plan + reservation prices |
 | [kusto-kql-api](platform-engineering/kusto-kql-api/SKILL.md) | Azure (Kusto / ADX / Fabric / Log Analytics) | Talking to a Kusto engine over its REST API or via KQL — five REST endpoints, four service-specific base URLs, v1-vs-v2 response frames, the "200 OK with errors in body" trap, the `innerunique` join trap, and a CI-gate KQL parser. Sibling to `dynatrace` (DQL ≠ KQL) | Azure Data Explorer / Fabric Eventhouse / Log Analytics / App Insights / Sentinel, `/v1/rest/query` + `/v2/rest/query`, KQL, v1/v2 response frames, client request properties, `innerunique` default join, `Microsoft.Azure.Kusto.Language` parser for CI |
 | [create-harness](platform-engineering/create-harness/SKILL.md) | Claude Code (agent harness) | Scaffolds a Claude Code "agent harness" monorepo — interview-first topology, `bin/harness sync` projection into `.claude/`, MCP + plugins wiring, and graphify knowledge graphs across product repos | `bin/harness sync`, monorepo of skills / MCP servers / sub-agents / knowledge vault, `.claude/` projection, MCP server + plugins wiring, graphify knowledge graphs, workspace of product repos |
+| [azure-finops](platform-engineering/azure-finops/SKILL.md) | Azure (FinOps) | **FinOps on Azure** — cloud financial management that maximizes the *business value* of spend, not just cuts it. The **FinOps Framework** (Inform→Optimize→Operate; four domains), the **WAF Cost Optimization** pillar (`CO:01`–`CO:14`), and **FOCUS** as the billing schema. Owns allocation, usage + rate optimization, budgeting/forecasting, governance, AKS + AI cost. Ships 3 read-only `az` triage scripts under `tools/` and 5 companion subagents in `.claude/agents/` | Microsoft Cost Management (analysis / **FOCUS exports** / budgets / anomaly / forecast), FinOps toolkit (FinOps hubs / Power BI / Azure Optimization Engine / Bicep-PowerShell modules), Azure Advisor cost recs, **Azure Resource Graph KQL** (stopped-not-deallocated VMs / unattached disks / orphans), Azure Policy guardrails (require-tag / deny-SKU / budgets), **Reservations vs Savings Plans vs Spot** + **Azure Hybrid Benefit** (coverage 60–85% / utilization >90%), tags + management-group/subscription allocation, showback→chargeback, AKS Cost Analysis + requests-based split, Azure OpenAI PTU-vs-PayGo + cost-per-token; `EffectiveCost`/`PricingCategory`/`CommitmentDiscountCategory` FOCUS columns |
 
 ### Operations
 
@@ -87,6 +88,7 @@ coding/               # application-development skills
 platform-engineering/ # infrastructure / DevOps / CI-CD / supply-chain skills
   <skill-name>/
     SKILL.md
+    tools/            # optional read-only cost scripts (e.g. azure-finops/)
 operations/           # Day-2 / SRE skills for running systems
   <skill-name>/
     SKILL.md
