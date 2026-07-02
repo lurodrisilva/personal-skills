@@ -4,17 +4,20 @@
 # tools
 
 ## Purpose
-Read-only **Karpenter-on-EKS triage scripts** shipped with the `karpenter-eks`
-skill. Each is a small `bash` + `kubectl` wrapper that surfaces a common
-operational question about a Karpenter deployment. They are **starting points to
-review before running**, not a certified audit, and they **only read** the
-cluster (`kubectl get`) — they never mutate it. They need only cluster-reader
-RBAC over the Karpenter CRDs and core objects.
+Read-only **Karpenter triage scripts** (EKS + AKS) shipped with the
+`karpenter-operations` skill. Each is a small `bash` + `kubectl` wrapper that
+surfaces a common operational question about a Karpenter deployment on either
+cloud. They are **starting points to review before running**, not a certified
+audit, and they **only read** the cluster (`kubectl get`) — they never mutate it.
+They need only cluster-reader RBAC over the Karpenter CRDs and core objects. They
+are cloud-agnostic (the core `karpenter.sh` API + capacity-type/instance-type
+labels are shared); `karpenter-health.sh` additionally probes both provider CRDs
+(`ec2nodeclasses.karpenter.k8s.aws`, `aksnodeclasses.karpenter.azure.com`).
 
 ## Key Files
 | File | Surfaces |
 |------|----------|
-| `karpenter-health.sh` | controller Deployment/pods, the three CRDs, NodePool / EC2NodeClass / NodeClaim `Ready` conditions |
+| `karpenter-health.sh` | controller Deployment/pods (self-hosted), the core + provider CRDs, NodePool / EC2NodeClass / AKSNodeClass / NodeClaim `Ready` conditions |
 | `disruption-blockers.sh` | pods/nodes with `karpenter.sh/do-not-disrupt`, PDBs allowing zero disruptions, nodes tainted `karpenter.sh/disrupted` |
 | `nodepool-capacity.sh` | per-NodePool `limits` vs `status.resources`, node counts by `karpenter.sh/capacity-type` and instance type |
 
@@ -48,12 +51,13 @@ RBAC over the Karpenter CRDs and core objects.
 ## Dependencies
 
 ### Internal
-- `../SKILL.md` — the `karpenter-eks` skill; its **REFERENCE** and Phase D/F sections
-  document these scripts. `karpenter-troubleshooter` and `karpenter-disruption-operator`
-  are the owning subagents.
+- `../SKILL.md` — the `karpenter-operations` skill; its **REFERENCE** and Phase D/F
+  sections document these scripts. `karpenter-troubleshooter` and
+  `karpenter-disruption-operator` are the owning subagents.
 
 ### External
-- `kubectl` (read access to the target cluster, incl. `karpenter.sh` / `karpenter.k8s.aws`
-  CRDs) + POSIX `bash`/`awk`/`grep`/`sort`/`uniq`. No other dependencies.
+- `kubectl` (read access to the target cluster, incl. `karpenter.sh`,
+  `karpenter.k8s.aws`, and/or `karpenter.azure.com` CRDs) + POSIX
+  `bash`/`awk`/`grep`/`sort`/`uniq`. No other dependencies.
 
 <!-- MANUAL: -->

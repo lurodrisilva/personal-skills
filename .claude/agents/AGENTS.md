@@ -16,7 +16,7 @@ skill's "Subagent Orchestration" table:
 - **Kubernetes-security team** → `security/kubernetes-security/SKILL.md`
 - **Kubernetes-networking team** → `networking/kubernetes-networking/SKILL.md`
 - **Azure-SRE-Agent team** → `operations/azure-sre-agent/SKILL.md`
-- **Karpenter-EKS team** → `operations/karpenter-eks/SKILL.md`
+- **Karpenter team** → `operations/karpenter-operations/SKILL.md`
 
 ## Key Files
 | File | Team | Description |
@@ -56,11 +56,11 @@ skill's "Subagent Orchestration" table:
 | `azure-sre-sourcecode.md` | azure-sre-agent | deploy/release/config-change correlation across GitHub / Azure DevOps (read-only) |
 | `azure-sre-architecture.md` | azure-sre-agent | resource topology + dependency + blast-radius mapping (read-only) |
 | `azure-sre-scanning.md` | azure-sre-agent | scheduled security / compliance / drift sweeps (read-only) |
-| `karpenter-nodepool-designer.md` | karpenter | NodePool + scheduling requirements, capacity types, `minValues`, weight/limits, consolidation-policy choice |
-| `karpenter-nodeclass-author.md` | karpenter | EC2NodeClass — AMI alias pinning, subnet/SG tag discovery, `role`/`instanceProfile`, `blockDeviceMappings`, IMDSv2, kubelet, userData |
-| `karpenter-disruption-operator.md` | karpenter | consolidation/drift/expiration/interruption, disruption budgets, `do-not-disrupt`, `terminationGracePeriod`, PDB interplay, NTH conflict |
-| `karpenter-installer.md` | karpenter | helm install/upgrade, CloudFormation IAM, Pod Identity vs IRSA, SQS interruption queue, node-role access entry, CA migration |
-| `karpenter-troubleshooter.md` | karpenter | Phase-F trees (not provisioning / NotReady / won't-deprovision / CNI IP / finalizer); owns the read-only `tools/` scripts |
+| `karpenter-nodepool-designer.md` | karpenter | NodePool + scheduling requirements (AWS `instance-*` / Azure `sku-*`), capacity types, `minValues`, weight/limits, static pools, consolidation-policy choice (EKS+AKS) |
+| `karpenter-nodeclass-author.md` | karpenter | `EC2NodeClass` (AMI alias pinning, subnet/SG discovery, role, IMDSv2) **and** `AKSNodeClass` (imageFamily, osDiskSizeGB, maxPods, kubelet) |
+| `karpenter-disruption-operator.md` | karpenter | consolidation/drift/expiration/interruption, budgets, `do-not-disrupt`, `terminationGracePeriod`, PDB interplay, NTH conflict (AWS), NAP disable (Azure) |
+| `karpenter-installer.md` | karpenter | EKS (helm/CloudFormation/Pod-Identity/IRSA/SQS) + AKS (NAP `az` enable/disable, self-hosted + Workload Identity), CA & self-hosted→NAP migration |
+| `karpenter-troubleshooter.md` | karpenter | Phase-F trees for EKS + AKS/NAP (not provisioning / NotReady / won't-deprovision / CNI IP / NAP enable-disable / finalizer); owns the read-only `tools/` scripts |
 
 ## Subdirectories
 None.
@@ -121,8 +121,9 @@ None.
   Kubernetes-networking team reads first and enforces.
 - `../../operations/azure-sre-agent/SKILL.md` — the contract the Azure-SRE-Agent
   team reads first and enforces (CORE PRINCIPLES + the propose-then-approve doctrine).
-- `../../operations/karpenter-eks/SKILL.md` — the contract the Karpenter-EKS team
-  reads first and enforces (CORE PRINCIPLES + the version/verify-upstream gate).
+- `../../operations/karpenter-operations/SKILL.md` — the contract the Karpenter team
+  reads first and enforces (CORE PRINCIPLES + the EKS/AKS provider split + the
+  version/verify-upstream gate).
 
 ### External
 - Claude Code subagent runtime (loads `tools` / `model` from frontmatter).
