@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-04-25 | Updated: 2026-06-29 | DEEPINIT: 2026-06-29 -->
+<!-- Generated: 2026-04-25 | Updated: 2026-07-02 | DEEPINIT: 2026-07-02 -->
 
 # platform-engineering
 
@@ -16,6 +16,7 @@ None at this level — all content lives in subdirectories.
 | `auth0-kong-authZ-authN/` | Kong API Gateway + Auth0 OIDC edge authN/authZ — `openid-connect` plugin, JWKS-not-introspection, `audience`-pinned tokens, KIC + Ingress and KGO + Gateway API paths (see `auth0-kong-authZ-authN/AGENTS.md`) |
 | `aws-cli/` | AWS CLI v2 — command structure, two-file config model, credential resolution, JMESPath `--query`, `file://` vs `fileb://`, pagination + waiters, SSO / IRSA / OIDC over long-lived keys (see `aws-cli/AGENTS.md`) |
 | `azure-cosmosdb-mongo-vcore/` | Cosmos DB for MongoDB vCore expertise notes — `dns-zone-group show` exit-0-on-missing CLI bug, SRV-not-A `mongocluster.cosmos.azure.com` TCP-probe trap, M30+ HA tier minimum (see `azure-cosmosdb-mongo-vcore/AGENTS.md`) |
+| `azure-finops/` | **FinOps on Azure** — the FinOps Framework (Inform→Optimize→Operate; four domains), the WAF Cost Optimization pillar (CO:01–CO:14) + FOCUS billing schema; allocation, usage/rate optimization, budgeting/forecasting, governance, AKS + AI cost. Ships 3 read-only `az` cost scripts under `tools/` + a 5-agent FinOps team in `../.claude/agents/` (see `azure-finops/AGENTS.md`) |
 | `azure-pg-flex/` | Azure Postgres Flexible Server observability playbook — metrics two-layer model, headroom-vs-raw diagnostic doctrine, REST API surface, two log surfaces (Server Logs + Diagnostic Settings categories) (see `azure-pg-flex/AGENTS.md`) |
 | `azure-retail-prices/` | Azure Retail Prices REST API — anonymous commercial-cloud-only endpoint, paginate to `NextPageLink === null`, USD-only billing reconciliation, case-sensitive `$filter` on `2023-01-01-preview` (see `azure-retail-prices/AGENTS.md`) |
 | `create-harness/` | Scaffolds a Claude Code "agent harness" monorepo — interview-first topology, `bin/harness sync` projection into `.claude/`, MCP + plugins wiring, graphify knowledge graphs across repos (see `create-harness/AGENTS.md`) |
@@ -53,6 +54,6 @@ None at this level — all content lives in subdirectories.
 ### Internal
 - `../README.md` — references each skill in the "Platform Engineering" table; rename → README update required.
 - `../scripts/validate-skills.sh` — validates this tree (its `DOMAIN_DIRS` includes `platform-engineering/`); CI runs it on every push and PR.
-- `../.claude/agents/` — companion subagent teams that some skills here orchestrate (`crossplane`, `kubernetes-operator-golang`).
+- `../.claude/agents/` — companion subagent teams that some skills here orchestrate (`crossplane`, `kubernetes-operator-golang`, `dynatrace`, `azure-finops`).
 
 <!-- MANUAL: -->

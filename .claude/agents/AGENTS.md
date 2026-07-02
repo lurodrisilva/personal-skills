@@ -17,6 +17,7 @@ skill's "Subagent Orchestration" table:
 - **Kubernetes-networking team** → `networking/kubernetes-networking/SKILL.md`
 - **Azure-SRE-Agent team** → `operations/azure-sre-agent/SKILL.md`
 - **Karpenter team** → `operations/karpenter-operations/SKILL.md`
+- **Azure-FinOps team** → `platform-engineering/azure-finops/SKILL.md`
 
 ## Key Files
 | File | Team | Description |
@@ -61,6 +62,11 @@ skill's "Subagent Orchestration" table:
 | `karpenter-disruption-operator.md` | karpenter | consolidation/drift/expiration/interruption, budgets, `do-not-disrupt`, `terminationGracePeriod`, PDB interplay, NTH conflict (AWS), NAP disable (Azure) |
 | `karpenter-installer.md` | karpenter | EKS (helm/CloudFormation/Pod-Identity/IRSA/SQS) + AKS (NAP `az` enable/disable, self-hosted + Workload Identity), CA & self-hosted→NAP migration |
 | `karpenter-troubleshooter.md` | karpenter | Phase-F trees for EKS + AKS/NAP (not provisioning / NotReady / won't-deprovision / CNI IP / NAP enable-disable / finalizer); owns the read-only `tools/` scripts |
+| `finops-cost-allocator.md` | azure-finops | Inform — FOCUS exports/ingestion, cost tags + MG/subscription hierarchy, showback split, reporting; owns the allocatable-spend KPI |
+| `finops-budget-forecaster.md` | azure-finops | Quantify — budgets + action groups, forecasting (±15%), planning/estimating, unit economics (incl. AI cost/token), anomaly management |
+| `finops-usage-optimizer.md` | azure-finops | Optimize/usage — rightsizing, Advisor, ARG waste cleanup, autoscale/scheduling, storage tiering, AKS cost split; owns `azure-waste-finder.sh` |
+| `finops-rate-optimizer.md` | azure-finops | Optimize/rate — Reservations vs Savings Plans vs Spot, Azure Hybrid Benefit, coverage 60–85% / utilization >90%; owns `azure-commitment-coverage.sh` |
+| `finops-governance-lead.md` | azure-finops | Operate — Azure Policy guardrails (require-tag/deny-SKU/budgets), chargeback, practice cadence, maturity assessment |
 
 ## Subdirectories
 None.
@@ -89,7 +95,9 @@ None.
   calico-policy-author} → calico-troubleshooter; azure-sre-agent:
   {observability | architecture} → sourcecode → rca (proposes, gated) ; scanning
   on a schedule; karpenter: installer → {nodepool-designer | nodeclass-author} →
-  disruption-operator → troubleshooter).
+  disruption-operator → troubleshooter; azure-finops: cost-allocator →
+  budget-forecaster → {usage-optimizer | rate-optimizer, usage before rate} →
+  governance-lead).
 - These agents are **repo-scoped** (see `../AGENTS.md`). If you add an agent, also
   add it to the owning skill's Subagent Orchestration table and that skill dir's
   `AGENTS.md` "Companion Subagents" section; if you rename one, update both sides.
@@ -124,6 +132,9 @@ None.
 - `../../operations/karpenter-operations/SKILL.md` — the contract the Karpenter team
   reads first and enforces (CORE PRINCIPLES + the EKS/AKS provider split + the
   version/verify-upstream gate).
+- `../../platform-engineering/azure-finops/SKILL.md` — the contract the Azure-FinOps
+  team reads first and enforces (CORE PRINCIPLES + allocate-before-optimize +
+  usage-before-rate + the read-only-analysis / gated-action doctrine).
 
 ### External
 - Claude Code subagent runtime (loads `tools` / `model` from frontmatter).
