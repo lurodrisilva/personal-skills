@@ -1,7 +1,7 @@
 # personal-skills
 
 [![Validate Skills](https://github.com/lurodrisilva/personal-skills/actions/workflows/validate-skills.yml/badge.svg)](https://github.com/lurodrisilva/personal-skills/actions/workflows/validate-skills.yml)
-[![Skills](https://img.shields.io/badge/skills-25-blue)](#available-skills)
+[![Skills](https://img.shields.io/badge/skills-26-blue)](#available-skills)
 
 A collection of **Claude Code skills** -- comprehensive reference guides that Claude Code loads when working on projects matching specific technology patterns. Each skill encodes architectural rules, coding conventions, and framework-specific guidance for a technology stack.
 
