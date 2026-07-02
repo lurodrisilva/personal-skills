@@ -78,19 +78,30 @@ Each skill provides:
 ## Repository Structure
 
 ```
-coding/
+ai/                   # AI-tooling skills (e.g. graphify knowledge-graph builder)
   <skill-name>/
     SKILL.md          # Skill definition (YAML frontmatter + markdown content)
-platform-engineering/
+coding/               # application-development skills
   <skill-name>/
-    SKILL.md          # Skill definition (YAML frontmatter + markdown content)
-operations/
+    SKILL.md
+platform-engineering/ # infrastructure / DevOps / CI-CD / supply-chain skills
   <skill-name>/
-    SKILL.md          # Skill definition (YAML frontmatter + markdown content)
+    SKILL.md
+operations/           # Day-2 / SRE skills for running systems
+  <skill-name>/
+    SKILL.md
+    tools/            # optional read-only triage scripts (e.g. karpenter-operations/)
+security/             # security / hardening / threat-model skills
+  <skill-name>/
+    SKILL.md
+    tools/            # optional read-only audit scripts (e.g. kubernetes-security/)
+networking/           # networking-plane / CNI / dataplane skills
+  <skill-name>/
+    SKILL.md
 scripts/
-  validate-skills.sh  # CI validation script
+  validate-skills.sh  # CI validation script (walks all CI-validated domains)
 .claude/
-  agents/             # repo-scoped Claude Code subagents that companion skills can orchestrate
+  agents/             # repo-scoped Claude Code subagents that companion skills orchestrate
 .github/
   workflows/
     validate-skills.yml  # GitHub Actions workflow
