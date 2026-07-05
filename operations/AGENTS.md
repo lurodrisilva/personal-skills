@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-06-29 | Updated: 2026-07-02 | DEEPINIT: 2026-07-02 -->
+<!-- Generated: 2026-06-29 | Updated: 2026-07-04 | DEEPINIT: 2026-07-04 -->
 
 # operations
 
@@ -24,6 +24,7 @@ None at this level — all content lives in subdirectories.
 | `azure-sre-agent/` | **Azure SRE Agent** (Preview) — Microsoft's AI-assisted SRE agent: the 6 extension primitives, the MCP-connector model (transports / auth / 80-tool budget), and the **propose-then-approve / Permission gate** doctrine; ships a 5-agent companion team in `../.claude/agents/` (see `azure-sre-agent/AGENTS.md`) |
 | `agentic-k8s-ops/` | Umbrella playbook for AI-assisted SRE on K8s/Azure — the **Detect→Decide→Act** pattern, the credible **MCP tool-belt** (with read-only guardrails per server), and the **blast-radius doctrine**; coordinates the other skills rather than duplicating them (see `agentic-k8s-ops/AGENTS.md`) |
 | `karpenter-operations/` | **Karpenter on Amazon EKS + Azure AKS** — just-in-time node-lifecycle autoscaling across both first-class clouds: shared core API (`NodePool` / `NodeClaim`) + per-cloud NodeClass (`EC2NodeClass` / `AKSNodeClass`), install/identity (EKS self-hosted; AKS **Node Auto Provisioning** managed + self-hosted), the disruption engine, observability, and troubleshooting trees; ships 3 read-only triage scripts under `tools/` and a 5-agent team in `../.claude/agents/` (see `karpenter-operations/AGENTS.md`) |
+| `kubernetes-finops/` | **FinOps on Kubernetes** (vendor-neutral, EKS/AKS/GKE/on-prem) — the container cost model (allocated/idle/shared split on `max(request,usage)`), cost allocation via **OpenCost**/**Kubecost**, right-sizing (requests vs limits, QoS, VPA/Goldilocks/KRR), autoscaling + node efficiency (HPA/VPA/KEDA + bin-packing + Spot), waste elimination, and governance (ResourceQuota/LimitRange + admission policy); ships 3 read-only `kubectl` scripts under `tools/` and a 5-agent team in `../.claude/agents/` (see `kubernetes-finops/AGENTS.md`) |
 
 ## For AI Agents
 
@@ -66,7 +67,7 @@ None at this level — all content lives in subdirectories.
 ### Internal
 - `../scripts/validate-skills.sh` — validates this tree (its `DOMAIN_DIRS` includes `operations/`); CI runs it on every push and PR. **A missing domain dir is itself a validator error**, so this directory must always contain at least one valid skill.
 - `../README.md` — references each skill in the "Operations" table; rename → README update required.
-- `../.claude/agents/` — the companion `k8s-*` subagent team that `kubernetes-operations` orchestrates.
+- `../.claude/agents/` — the companion subagent teams that `kubernetes-operations` (`k8s-*`), `karpenter-operations` (`karpenter-*`), `azure-sre-agent` (`azure-sre-*`), and `kubernetes-finops` (`k8s-cost-*` / `k8s-rightsizer` / `k8s-waste-hunter`) orchestrate.
 - `../CLAUDE.md` — authoritative SKILL.md contract and repo layout.
 
 <!-- MANUAL: -->

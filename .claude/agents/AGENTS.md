@@ -18,6 +18,7 @@ skill's "Subagent Orchestration" table:
 - **Azure-SRE-Agent team** → `operations/azure-sre-agent/SKILL.md`
 - **Karpenter team** → `operations/karpenter-operations/SKILL.md`
 - **Azure-FinOps team** → `platform-engineering/azure-finops/SKILL.md`
+- **Kubernetes-FinOps team** → `operations/kubernetes-finops/SKILL.md`
 
 ## Key Files
 | File | Team | Description |
@@ -67,6 +68,11 @@ skill's "Subagent Orchestration" table:
 | `finops-usage-optimizer.md` | azure-finops | Optimize/usage — rightsizing, Advisor, ARG waste cleanup, autoscale/scheduling, storage tiering, AKS cost split; owns `azure-waste-finder.sh` |
 | `finops-rate-optimizer.md` | azure-finops | Optimize/rate — Reservations vs Savings Plans vs Spot, Azure Hybrid Benefit, coverage 60–85% / utilization >90%; owns `azure-commitment-coverage.sh` |
 | `finops-governance-lead.md` | azure-finops | Operate — Azure Policy guardrails (require-tag/deny-SKU/budgets), chargeback, practice cadence, maturity assessment |
+| `k8s-cost-allocator.md` | k8s-finops | Allocate — OpenCost/Kubecost, labels + namespaces, the allocated/idle/shared split, showback→chargeback; owns `k8s-cost-allocation.sh` |
+| `k8s-rightsizer.md` | k8s-finops | Right-size — requests vs limits vs usage, QoS classes, p95/p99, VPA/Goldilocks/KRR; owns `k8s-rightsizing-scan.sh` |
+| `k8s-cost-autoscaler.md` | k8s-finops | Scale & pack — HPA/VPA/KEDA scale-to-zero, bin-packing/descheduler, Spot/Arm64/SKU, node-capacity decision |
+| `k8s-waste-hunter.md` | k8s-finops | Eliminate — idle nodes, unused PVCs/PVs, zombie Deployments/Services, completed Jobs; owns `k8s-idle-waste.sh` |
+| `k8s-cost-governor.md` | k8s-finops | Govern — ResourceQuota/LimitRange, require-requests/labels admission policy, budgets/anomaly, chargeback, maturity |
 
 ## Subdirectories
 None.
@@ -97,7 +103,8 @@ None.
   on a schedule; karpenter: installer → {nodepool-designer | nodeclass-author} →
   disruption-operator → troubleshooter; azure-finops: cost-allocator →
   budget-forecaster → {usage-optimizer | rate-optimizer, usage before rate} →
-  governance-lead).
+  governance-lead; kubernetes-finops: cost-allocator → rightsizer →
+  {cost-autoscaler | waste-hunter} → cost-governor).
 - These agents are **repo-scoped** (see `../AGENTS.md`). If you add an agent, also
   add it to the owning skill's Subagent Orchestration table and that skill dir's
   `AGENTS.md` "Companion Subagents" section; if you rename one, update both sides.
@@ -135,6 +142,9 @@ None.
 - `../../platform-engineering/azure-finops/SKILL.md` — the contract the Azure-FinOps
   team reads first and enforces (CORE PRINCIPLES + allocate-before-optimize +
   usage-before-rate + the read-only-analysis / gated-action doctrine).
+- `../../operations/kubernetes-finops/SKILL.md` — the contract the Kubernetes-FinOps
+  team reads first and enforces (CORE PRINCIPLES + allocate-before-optimize +
+  requests-are-the-currency + the container allocated/idle/shared cost split).
 
 ### External
 - Claude Code subagent runtime (loads `tools` / `model` from frontmatter).
