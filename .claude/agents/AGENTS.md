@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-06-28 | Updated: 2026-07-02 -->
+<!-- Generated: 2026-06-28 | Updated: 2026-07-05 -->
 
 # agents
 
@@ -18,6 +18,7 @@ skill's "Subagent Orchestration" table:
 - **Azure-SRE-Agent team** → `operations/azure-sre-agent/SKILL.md`
 - **Karpenter team** → `operations/karpenter-operations/SKILL.md`
 - **Azure-FinOps team** → `platform-engineering/azure-finops/SKILL.md`
+- **AWS-FinOps team** → `platform-engineering/aws-finops/SKILL.md`
 - **Kubernetes-FinOps team** → `operations/kubernetes-finops/SKILL.md`
 
 ## Key Files
@@ -68,6 +69,11 @@ skill's "Subagent Orchestration" table:
 | `finops-usage-optimizer.md` | azure-finops | Optimize/usage — rightsizing, Advisor, ARG waste cleanup, autoscale/scheduling, storage tiering, AKS cost split; owns `azure-waste-finder.sh` |
 | `finops-rate-optimizer.md` | azure-finops | Optimize/rate — Reservations vs Savings Plans vs Spot, Azure Hybrid Benefit, coverage 60–85% / utilization >90%; owns `azure-commitment-coverage.sh` |
 | `finops-governance-lead.md` | azure-finops | Operate — Azure Policy guardrails (require-tag/deny-SKU/budgets), chargeback, practice cadence, maturity assessment |
+| `aws-finops-cost-allocator.md` | aws-finops | Inform — Data Exports/FOCUS + CUR into S3/Athena/QuickSight, cost allocation tags + Cost Categories + Organizations, CID dashboards; owns the allocatable-spend KPI |
+| `aws-finops-budget-forecaster.md` | aws-finops | Quantify — AWS Budgets + budget actions, forecasting (±15%), planning/estimating, unit economics (incl. Bedrock cost/token), Cost Anomaly Detection |
+| `aws-finops-usage-optimizer.md` | aws-finops | Optimize/usage — Compute Optimizer + Cost Optimization Hub rightsizing, Trusted Advisor, waste cleanup, EKS SCAD split; owns `aws-waste-finder.sh` |
+| `aws-finops-rate-optimizer.md` | aws-finops | Optimize/rate — Savings Plans vs RIs vs Spot, Graviton, coverage 60–85% / utilization >90%; owns `aws-commitment-coverage.sh` |
+| `aws-finops-governance-lead.md` | aws-finops | Operate — SCPs / tag policies / budget-action guardrails, Billing Conductor chargeback, practice cadence, maturity assessment |
 | `k8s-cost-allocator.md` | k8s-finops | Allocate — OpenCost/Kubecost, labels + namespaces, the allocated/idle/shared split, showback→chargeback; owns `k8s-cost-allocation.sh` |
 | `k8s-rightsizer.md` | k8s-finops | Right-size — requests vs limits vs usage, QoS classes, p95/p99, VPA/Goldilocks/KRR; owns `k8s-rightsizing-scan.sh` |
 | `k8s-cost-autoscaler.md` | k8s-finops | Scale & pack — HPA/VPA/KEDA scale-to-zero, bin-packing/descheduler, Spot/Arm64/SKU, node-capacity decision |
@@ -103,7 +109,9 @@ None.
   on a schedule; karpenter: installer → {nodepool-designer | nodeclass-author} →
   disruption-operator → troubleshooter; azure-finops: cost-allocator →
   budget-forecaster → {usage-optimizer | rate-optimizer, usage before rate} →
-  governance-lead; kubernetes-finops: cost-allocator → rightsizer →
+  governance-lead; aws-finops: cost-allocator → budget-forecaster →
+  {usage-optimizer | rate-optimizer, usage before rate} → governance-lead;
+  kubernetes-finops: cost-allocator → rightsizer →
   {cost-autoscaler | waste-hunter} → cost-governor).
 - These agents are **repo-scoped** (see `../AGENTS.md`). If you add an agent, also
   add it to the owning skill's Subagent Orchestration table and that skill dir's
@@ -140,6 +148,9 @@ None.
   reads first and enforces (CORE PRINCIPLES + the EKS/AKS provider split + the
   version/verify-upstream gate).
 - `../../platform-engineering/azure-finops/SKILL.md` — the contract the Azure-FinOps
+  team reads first and enforces (CORE PRINCIPLES + allocate-before-optimize +
+  usage-before-rate + the read-only-analysis / gated-action doctrine).
+- `../../platform-engineering/aws-finops/SKILL.md` — the contract the AWS-FinOps
   team reads first and enforces (CORE PRINCIPLES + allocate-before-optimize +
   usage-before-rate + the read-only-analysis / gated-action doctrine).
 - `../../operations/kubernetes-finops/SKILL.md` — the contract the Kubernetes-FinOps
