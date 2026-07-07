@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-06-28 | Updated: 2026-07-05 -->
+<!-- Generated: 2026-06-28 | Updated: 2026-07-07 -->
 
 # agents
 
@@ -20,6 +20,9 @@ skill's "Subagent Orchestration" table:
 - **Azure-FinOps team** → `platform-engineering/azure-finops/SKILL.md`
 - **AWS-FinOps team** → `platform-engineering/aws-finops/SKILL.md`
 - **Kubernetes-FinOps team** → `operations/kubernetes-finops/SKILL.md`
+- **Terraform-IaC team** → `platform-engineering/terraform-iac/SKILL.md`
+- **GitOps-ArgoCD team** → `operations/gitops-argocd/SKILL.md`
+- **Observability-Stack team** → `operations/observability-stack/SKILL.md`
 
 ## Key Files
 | File | Team | Description |
@@ -79,6 +82,21 @@ skill's "Subagent Orchestration" table:
 | `k8s-cost-autoscaler.md` | k8s-finops | Scale & pack — HPA/VPA/KEDA scale-to-zero, bin-packing/descheduler, Spot/Arm64/SKU, node-capacity decision |
 | `k8s-waste-hunter.md` | k8s-finops | Eliminate — idle nodes, unused PVCs/PVs, zombie Deployments/Services, completed Jobs; owns `k8s-idle-waste.sh` |
 | `k8s-cost-governor.md` | k8s-finops | Govern — ResourceQuota/LimitRange, require-requests/labels admission policy, budgets/anomaly, chargeback, maturity |
+| `terraform-module-author.md` | terraform-iac | Phase A — reusable modules (typed vars + `validation`, outputs, `for_each`/`dynamic`, `moved`), composition, module registry + version constraints |
+| `terraform-state-operator.md` | terraform-iac | Phase B/F — remote backends + locking (S3+DynamoDB/azurerm/gcs/TFC), workspaces, `import`, `state mv`/`rm` safety, `plan -refresh-only` drift; owns `tf-state-inventory.sh` + `tf-drift-check.sh` |
+| `terraform-provider-config.md` | terraform-iac | Phase C — `required_providers` + `.terraform.lock.hcl`, OIDC/assume-role/workload-identity auth (no static keys), provider `alias`, OIDC-in-CI |
+| `terraform-plan-reviewer.md` | terraform-iac | Phase D — reading `plan` (adds/changes/**destroys**), `-detailed-exitcode`, OPA/Conftest/Sentinel policy-as-code, `prevent_destroy`/`-target` guard, gated apply; owns `tf-plan-summary.sh` |
+| `terraform-iac-tester.md` | terraform-iac | Phase E — `validate`/`fmt -check`, tflint, tfsec/checkov/trivy, native `terraform test` (`.tftest.hcl`), terratest, CI gate |
+| `argocd-application-author.md` | gitops-argocd | Phase A — `Application`/multi-source, `AppProject` tenancy, Helm/Kustomize/directory, app-of-apps; + Argo Rollouts / Image Updater promotion manifests |
+| `argocd-sync-operator.md` | gitops-argocd | Phase B — sync policy (`prune`/`selfHeal`), sync waves, PreSync/Sync/PostSync/SyncFail hooks, sync options, gated prod sync; owns `argocd-sync-status.sh` |
+| `argocd-drift-health.md` | gitops-argocd | Phase C — custom-Lua health, diff, `ignoreDifferences`, OutOfSync/Degraded/Missing triage, self-heal reconcile; owns `argocd-drift-check.sh` |
+| `argocd-multicluster.md` | gitops-argocd | Phase D — `ApplicationSet` generators, cluster registration, RBAC + SSO tenancy, fan-out at scale; owns `argocd-app-health.sh` |
+| `flux-gitops-operator.md` | gitops-argocd | Phase F — the Flux sibling (`GitRepository`/`Kustomization`/`HelmRelease`, controllers, Flagger), Argo-vs-Flux selection + migration |
+| `prometheus-rules-author.md` | observability-stack | Phase A — PromQL, recording/alerting rules, `ServiceMonitor`/`PodMonitor`/`PrometheusRule`, relabeling, cardinality, Thanos/Mimir; owns `promtool-check.sh` |
+| `otel-collector-engineer.md` | observability-stack | Phase B — Collector pipelines, OTLP, tail-sampling, `k8sattributes`, semantic conventions, instrumentation; owns `otel-config-validate.sh` |
+| `loki-tempo-correlation.md` | observability-stack | Phase C — Loki/LogQL + Tempo/TraceQL, exemplars, trace↔log correlation, structured logging |
+| `grafana-dashboard-author.md` | observability-stack | Phase D — dashboards-as-code (JSON/provisioning/grafana-operator/Terraform), RED/USE, variables, unified alerting |
+| `slo-alerting-engineer.md` | observability-stack | Phase D/E — SLI/SLO/error-budget, Sloth/OpenSLO, multi-window burn-rate, Alertmanager routing; owns `alert-routing-check.sh` |
 
 ## Subdirectories
 None.
@@ -112,7 +130,12 @@ None.
   governance-lead; aws-finops: cost-allocator → budget-forecaster →
   {usage-optimizer | rate-optimizer, usage before rate} → governance-lead;
   kubernetes-finops: cost-allocator → rightsizer →
-  {cost-autoscaler | waste-hunter} → cost-governor).
+  {cost-autoscaler | waste-hunter} → cost-governor; terraform-iac:
+  provider-config → module-author → plan-reviewer → iac-tester → state-operator;
+  gitops-argocd: application-author → sync-operator → drift-health → multicluster
+  (flux-gitops-operator = the Flux sibling); observability-stack:
+  otel-collector-engineer → prometheus-rules-author → loki-tempo-correlation →
+  grafana-dashboard-author → slo-alerting-engineer).
 - These agents are **repo-scoped** (see `../AGENTS.md`). If you add an agent, also
   add it to the owning skill's Subagent Orchestration table and that skill dir's
   `AGENTS.md` "Companion Subagents" section; if you rename one, update both sides.
@@ -156,6 +179,16 @@ None.
 - `../../operations/kubernetes-finops/SKILL.md` — the contract the Kubernetes-FinOps
   team reads first and enforces (CORE PRINCIPLES + allocate-before-optimize +
   requests-are-the-currency + the container allocated/idle/shared cost split).
+- `../../platform-engineering/terraform-iac/SKILL.md` — the contract the Terraform-IaC
+  team reads first and enforces (CORE PRINCIPLES + plan-before-apply +
+  remote-state-with-locking + short-lived-least-privilege-auth + the
+  read-only-analysis / gated-apply doctrine).
+- `../../operations/gitops-argocd/SKILL.md` — the contract the GitOps-ArgoCD team reads
+  first and enforces (CORE PRINCIPLES + Git-is-the-single-source-of-truth +
+  gated-prod-sync + AppProject blast-radius).
+- `../../operations/observability-stack/SKILL.md` — the contract the Observability-Stack
+  team reads first and enforces (CORE PRINCIPLES + three-signals-one-context +
+  alert-on-SLO-burn + everything-as-code + the read-only-to-observe doctrine).
 
 ### External
 - Claude Code subagent runtime (loads `tools` / `model` from frontmatter).

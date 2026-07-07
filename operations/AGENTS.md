@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-06-29 | Updated: 2026-07-04 | DEEPINIT: 2026-07-04 -->
+<!-- Generated: 2026-06-29 | Updated: 2026-07-07 | DEEPINIT: 2026-07-04 -->
 
 # operations
 
@@ -25,6 +25,8 @@ None at this level — all content lives in subdirectories.
 | `agentic-k8s-ops/` | Umbrella playbook for AI-assisted SRE on K8s/Azure — the **Detect→Decide→Act** pattern, the credible **MCP tool-belt** (with read-only guardrails per server), and the **blast-radius doctrine**; coordinates the other skills rather than duplicating them (see `agentic-k8s-ops/AGENTS.md`) |
 | `karpenter-operations/` | **Karpenter on Amazon EKS + Azure AKS** — just-in-time node-lifecycle autoscaling across both first-class clouds: shared core API (`NodePool` / `NodeClaim`) + per-cloud NodeClass (`EC2NodeClass` / `AKSNodeClass`), install/identity (EKS self-hosted; AKS **Node Auto Provisioning** managed + self-hosted), the disruption engine, observability, and troubleshooting trees; ships 3 read-only triage scripts under `tools/` and a 5-agent team in `../.claude/agents/` (see `karpenter-operations/AGENTS.md`) |
 | `kubernetes-finops/` | **FinOps on Kubernetes** (vendor-neutral, EKS/AKS/GKE/on-prem) — the container cost model (allocated/idle/shared split on `max(request,usage)`), cost allocation via **OpenCost**/**Kubecost**, right-sizing (requests vs limits, QoS, VPA/Goldilocks/KRR), autoscaling + node efficiency (HPA/VPA/KEDA + bin-packing + Spot), waste elimination, and governance (ResourceQuota/LimitRange + admission policy); ships 3 read-only `kubectl` scripts under `tools/` and a 5-agent team in `../.claude/agents/` (see `kubernetes-finops/AGENTS.md`) |
+| `gitops-argocd/` | **GitOps continuous delivery** with **Argo CD** (primary) + **Flux** (sibling) — Git as the single source of truth; `Application`/`AppProject`/multi-source, the sync engine (policy/waves/hooks, `prune`/`selfHeal`), health + drift (custom-Lua health, `ignoreDifferences`, OutOfSync triage), multi-cluster **ApplicationSet** fan-out + RBAC/SSO tenancy, progressive delivery (**Argo Rollouts**/**Flagger**) + PR-gated promotion; prod sync stays a human gate; ships 3 read-only `kubectl`/`argocd` scripts under `tools/` and a 5-agent team in `../.claude/agents/` (see `gitops-argocd/AGENTS.md`) |
+| `observability-stack/` | **Vendor-neutral OSS observability** (Prometheus/Grafana/OpenTelemetry/Loki/Tempo/Alertmanager — the **LGTM** stack) + **SLOs** — three signals correlated into one context; PromQL rules + `ServiceMonitor`/cardinality control, the **OTel Collector** (OTLP/tail-sampling/`k8sattributes`), Loki/LogQL + Tempo/TraceQL + exemplar trace↔log correlation, Grafana dashboards-as-code (RED/USE), SLI/SLO/error-budget (**Sloth**/**OpenSLO**) + multi-window burn-rate + Alertmanager routing; the OSS counterpart to `../platform-engineering/dynatrace/`; ships 3 read-only config-validator scripts under `tools/` and a 5-agent team in `../.claude/agents/` (see `observability-stack/AGENTS.md`) |
 
 ## For AI Agents
 
@@ -67,7 +69,7 @@ None at this level — all content lives in subdirectories.
 ### Internal
 - `../scripts/validate-skills.sh` — validates this tree (its `DOMAIN_DIRS` includes `operations/`); CI runs it on every push and PR. **A missing domain dir is itself a validator error**, so this directory must always contain at least one valid skill.
 - `../README.md` — references each skill in the "Operations" table; rename → README update required.
-- `../.claude/agents/` — the companion subagent teams that `kubernetes-operations` (`k8s-*`), `karpenter-operations` (`karpenter-*`), `azure-sre-agent` (`azure-sre-*`), and `kubernetes-finops` (`k8s-cost-*` / `k8s-rightsizer` / `k8s-waste-hunter`) orchestrate.
+- `../.claude/agents/` — the companion subagent teams that `kubernetes-operations` (`k8s-*`), `karpenter-operations` (`karpenter-*`), `azure-sre-agent` (`azure-sre-*`), `kubernetes-finops` (`k8s-cost-*` / `k8s-rightsizer` / `k8s-waste-hunter`), `gitops-argocd` (`argocd-*` / `flux-gitops-operator`), and `observability-stack` (`prometheus-rules-author` / `otel-collector-engineer` / `loki-tempo-correlation` / `grafana-dashboard-author` / `slo-alerting-engineer`) orchestrate.
 - `../CLAUDE.md` — authoritative SKILL.md contract and repo layout.
 
 <!-- MANUAL: -->
