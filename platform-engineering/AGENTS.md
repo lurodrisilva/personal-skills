@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-04-25 | Updated: 2026-07-05 | DEEPINIT: 2026-07-02 -->
+<!-- Generated: 2026-04-25 | Updated: 2026-07-07 | DEEPINIT: 2026-07-02 -->
 
 # platform-engineering
 
@@ -29,6 +29,7 @@ None at this level — all content lives in subdirectories.
 | `kafka-strimzi-operator/` | Apache Kafka on Kubernetes via the Strimzi operator — KRaft-only role-split `KafkaNodePool`s, the verbatim `BrokerCapacity` API contract, Cruise Control rebalance modes, perf-test playbook against the four limiting resources (CPU / network-in / network-out / log disk), `Hex.Scaffold` consumer/producer integration notes (see `kafka-strimzi-operator/AGENTS.md`) |
 | `kubernetes-operator-golang/` | **Building** Kubernetes Operators in Go (kubebuilder go/v4 + controller-runtime) — CRD/API design, the level-based idempotent Reconcile loop, webhooks, RBAC, envtest, OLM packaging; ships a 5-agent operator team in `../.claude/agents/` (see `kubernetes-operator-golang/AGENTS.md`) |
 | `kusto-kql-api/` | Kusto / KQL telemetry-query API playbook — five REST endpoints, four service-specific base URLs, v1-vs-v2 response frames, the "200 OK with errors in body" trap, `innerunique` join trap, standalone `Microsoft.Azure.Kusto.Language` parser for CI gates (see `kusto-kql-api/AGENTS.md`) |
+| `terraform-iac/` | **Infrastructure as Code with Terraform / OpenTofu** — the `plan → review → gated apply` lifecycle: HCL2 module authoring, remote state + locking (S3+DynamoDB / azurerm / gcs / TFC-HCP), providers + short-lived OIDC/assume-role/workload-identity auth, plan review + policy-as-code (OPA/Conftest/Sentinel), testing (`terraform test`/terratest/tflint/tfsec/checkov), and drift; ships 3 read-only `terraform` scripts under `tools/` + a 5-agent IaC team in `../.claude/agents/` (see `terraform-iac/AGENTS.md`) |
 | `wiremock-api-mocks/` | Shared cluster-wide WireMock mock server in `testing-system` namespace — stubs declared in consumer Helm values, registered via Admin API at install/upgrade (see `wiremock-api-mocks/AGENTS.md`) |
 
 ## For AI Agents
@@ -55,6 +56,6 @@ None at this level — all content lives in subdirectories.
 ### Internal
 - `../README.md` — references each skill in the "Platform Engineering" table; rename → README update required.
 - `../scripts/validate-skills.sh` — validates this tree (its `DOMAIN_DIRS` includes `platform-engineering/`); CI runs it on every push and PR.
-- `../.claude/agents/` — companion subagent teams that some skills here orchestrate (`crossplane`, `kubernetes-operator-golang`, `dynatrace`, `azure-finops`, `aws-finops`).
+- `../.claude/agents/` — companion subagent teams that some skills here orchestrate (`crossplane`, `kubernetes-operator-golang`, `dynatrace`, `azure-finops`, `aws-finops`, `terraform-iac`).
 
 <!-- MANUAL: -->
