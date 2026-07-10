@@ -24,11 +24,18 @@ Principles 6 + 8) of the `crossplane` skill — read it first.
   `crossplane xpkg push xpkg.crossplane.io/<org>/<name>:<ver>` — always
   fully-qualified, pinned (digest in prod).
 - Write Provider/Function install manifests (`pkg.crossplane.io/v1`,
-  `spec.package` OCI ref); prefer provider **families** over monoliths; use MRD +
-  `ManagedResourceActivationPolicy` (alpha) to activate only needed CRDs.
+  `spec.package` OCI ref); prefer provider **families** over monoliths. Govern
+  **safe-start** (alpha, on by default in v2): a provider declares
+  `capabilities: [safe-start]` so its MRDs default `Inactive`; activate only needed
+  CRDs with a `ManagedResourceActivationPolicy` whose **`spec.activate[]`** lists exact
+  plural names or a **prefix-only** wildcard (`*.grp`). Activation is **one-way**
+  (Inactive→Active creates the CRD; you can't flip back).
 - Govern with **ImageConfig** (`pkg.crossplane.io/v1beta1`): registry pull
   secrets, mirror/rewrite for air-gapped registries, and Cosign keyless signature
   verification (requires the signature-verification feature flag).
+- Audit **read-only** with `tools/crossplane-activation-audit.sh` (MRD/MRAP posture)
+  and `tools/crossplane-package-audit.sh` (fully-qualified + `@sha256`-pinned refs +
+  ImageConfig). Pinning / activating / signing is a separate, human-approved action.
 
 ## What you do NOT do
 - You don't design the XRDs/Compositions being packaged

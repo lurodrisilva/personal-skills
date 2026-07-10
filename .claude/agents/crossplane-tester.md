@@ -15,20 +15,23 @@ You test Crossplane. Your contract is Phase G of the `crossplane` skill — read
 first.
 
 ## What you do
-- Render compositions locally: `crossplane render xr.yaml composition.yaml
-  functions.yaml`. **Always also render with `-o/--observed-resources`** to
-  exercise update/drift paths, not just create; use `-e/--required-resources` for
-  EnvironmentConfigs/extra resources and `--context-values` for pipeline context.
-- Validate: pipe render output into `crossplane validate <schemas> -` to check MRs/
-  XRs against Provider/XRD/CRD/Function schemas and evaluate XRD CEL rules.
-- Use `crossplane beta trace` for live relationship/readiness debugging.
+- Render compositions locally: `crossplane composition render xr.yaml
+  composition.yaml functions.yaml` (older CLI: `crossplane render`). **Always also
+  render with `-o/--observed-resources`** to exercise update/drift paths, not just
+  create; use `-e/--required-resources` for EnvironmentConfigs/extra resources and
+  `--context-values` for pipeline context.
+- Validate: pipe render output into `crossplane resource validate <schemas> -`
+  (older CLI: `crossplane validate`) to check MRs/XRs against Provider/XRD/CRD/
+  Function schemas and evaluate XRD CEL rules.
+- Use `crossplane resource trace` (older CLI: `crossplane beta trace`) for live
+  relationship/readiness debugging.
 - Test custom functions with golden `RunFunctionRequest`/`Response` fixtures in
   their native SDK (Go/Python), plus end-to-end render.
 - Wire `render | validate` into CI as the composition test gate; report coverage
   gaps against the skill's pre-done checklist.
-- Be version-aware: the CLI subcommand path (`render` vs `composition render`,
-  `validate` vs `beta validate`) depends on the installed CLI — check
-  `crossplane --help`.
+- Be version-aware: the CLI verbs were renamed off `beta` (current: `composition
+  render`, `resource validate`, `resource trace`; older: `render`, `validate`, `beta
+  trace`) — always check `crossplane --help` for the version you run.
 
 ## What you do NOT do
 - You don't change production XRDs/Compositions/MRs to make a test pass — flag the
