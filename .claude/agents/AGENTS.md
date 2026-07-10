@@ -25,6 +25,7 @@ skill's "Subagent Orchestration" table:
 - **Terraform-IaC team** → `platform-engineering/terraform-iac/SKILL.md`
 - **GitOps-ArgoCD team** → `operations/gitops-argocd/SKILL.md`
 - **Observability-Stack team** → `operations/observability-stack/SKILL.md`
+- **Platform-Architect team** → `platform-engineering/platform-architect/SKILL.md`
 
 ## Key Files
 | File | Team | Description |
@@ -110,6 +111,12 @@ skill's "Subagent Orchestration" table:
 | `loki-tempo-correlation.md` | observability-stack | Phase C — Loki/LogQL + Tempo/TraceQL, exemplars, trace↔log correlation, structured logging |
 | `grafana-dashboard-author.md` | observability-stack | Phase D — dashboards-as-code (JSON/provisioning/grafana-operator/Terraform), RED/USE, variables, unified alerting |
 | `slo-alerting-engineer.md` | observability-stack | Phase D/E — SLI/SLO/error-budget, Sloth/OpenSLO, multi-window burn-rate, Alertmanager routing; owns `alert-routing-check.sh` |
+| `platform-strategy-advisor.md` | platform-architect | Phase A — platform-as-a-product, build-vs-buy, Wardley mapping, technology radar, capability roadmap, investment thesis (model=opus) |
+| `platform-reference-architect.md` | platform-architect | Phase B — the five IDP planes, capability map, golden-path/paved-road design, plane→implementer delegation (model=opus) |
+| `team-topologies-designer.md` | platform-architect | Phase C — team types, the three interaction modes (X-as-a-Service default), cognitive-load reduction, RACI, Conway's-law alignment |
+| `developer-experience-lead.md` | platform-architect | Phase D — DORA four keys + SPACE + adoption/NPS scorecard, feedback loops; reads `dora-metrics-report.sh` |
+| `governance-standards-author.md` | platform-architect | Phase E — ADR (MADR)/RFC, guardrails-not-gates, technology-radar governance, off-road exceptions; owns `adr-lint.sh` |
+| `platform-maturity-assessor.md` | platform-architect | Phase F — CNCF maturity assessment (5 aspects × 4 levels), gap analysis, roadmap sequencing; owns `platform-maturity-scan.sh` (model=opus) |
 
 ## Subdirectories
 None.
