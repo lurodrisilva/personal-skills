@@ -23,14 +23,19 @@ migration flagged inline.
 | File | Description |
 |------|-------------|
 | `SKILL.md` | The skill definition — `name: crossplane`, `domain: platform-engineering`, `pattern: kubernetes-control-plane`, `stack: crossplane-v2 + compositions + functions + packages`, `version: crossplane-v2-first-v1-flagged` |
+| `tools/` | Four read-only `bash` + `kubectl get` triage scripts (health / resource / activation / package) + their `tools/AGENTS.md` |
 
 ## Subdirectories
-None.
+| Directory | Description |
+|-----------|-------------|
+| `tools/` | Read-only Crossplane control-plane triage scripts (`crossplane-health-check.sh`, `crossplane-resource-audit.sh`, `crossplane-activation-audit.sh`, `crossplane-package-audit.sh`). `kubectl get` only — never mutating. See `tools/AGENTS.md`. |
 
 ## For AI Agents
 
 ### Working In This Directory
-- Edit `SKILL.md` only.
+- `SKILL.md` is the primary file; `tools/*.sh` are read-only companion scripts (see
+  `tools/AGENTS.md` for their invariants). The six subagents live in
+  `../../.claude/agents/crossplane-*.md`.
 - The **CORE PRINCIPLES (NON-NEGOTIABLE)** and the **VERSION MAP** at the top are
   the load-bearing review gate — do not soften them. Highest-blast-radius facts to
   keep accurate:
@@ -62,11 +67,16 @@ None.
 - After editing the frontmatter, confirm `.description` still parses as a **string**, not a map: `yq '.description | type'` should print `!!str`.
 
 ### Companion Subagents
-- Orchestrated by five repo-scoped subagents in `../../.claude/agents/`:
+- Orchestrated by six repo-scoped subagents in `../../.claude/agents/`:
   `crossplane-control-plane-operator`, `crossplane-managed-resource-author`,
   `crossplane-composition-author`, `crossplane-package-publisher`,
-  `crossplane-tester`. The "Subagent Orchestration" table at the end of `SKILL.md`
-  maps phases → agents. Rename a phase or agent → update both sides.
+  `crossplane-provider-developer` (Phase H — building a provider), and
+  `crossplane-tester`. The "SUBAGENT ORCHESTRATION" table at the end of `SKILL.md`
+  maps phases → agents (and which agent owns each `tools/` script). Rename a phase or
+  agent → update both sides.
+- The **MCP SURFACE** section of `SKILL.md` documents the read-only MCP posture
+  (`kubernetes-mcp-server --read-only` primary). Keep it read-only — a sync / install /
+  activation / `xpkg push` is a separate, human-approved action.
 
 ### Common Patterns
 - "CORE PRINCIPLES (NON-NEGOTIABLE)" numbered list + a phase-by-phase body
@@ -81,7 +91,7 @@ None.
 ### Internal
 - `../../scripts/validate-skills.sh` — enforces the frontmatter + body + fenced-block contract.
 - `../../README.md` — references this skill in the "Platform Engineering" table; rename → README update required.
-- `../../.claude/agents/crossplane-*.md` — the five companion subagents this skill delegates to.
+- `../../.claude/agents/crossplane-*.md` — the six companion subagents this skill delegates to.
 - `../addons-and-building-blocks/SKILL.md` — sibling skill about **consuming**
   provider-shipped Managed Resources inside Helm building blocks + ArgoCD. This
   skill is about **building** the control plane (MRs, XRDs, Compositions,

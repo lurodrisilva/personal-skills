@@ -30,8 +30,13 @@ MAP) of the `crossplane` skill — read it first and obey its CORE PRINCIPLES.
 - Show users consuming the abstraction as a **namespaced XR directly** (v2), with
   Crossplane machinery under `spec.crossplane`; note the v1 Claim only for
   `LegacyCluster`.
-- Validate with `crossplane render` + `crossplane validate` (hand off deep test
-  authoring to crossplane-tester).
+- Apply the XRD API-design rules (the API is forever): required fields sparingly,
+  **enum over bool**, prefer arrays, nest variants; you can't change `group`/`names`
+  after creation; prefer a **new XRD over a conversion webhook** for breaking changes.
+- Optionally scaffold XRDs+Compositions from provider CRDs with **x-generation**, but
+  adapt its v1 Claim-shaped output to v2 (namespaced XRs, Pipeline) before shipping.
+- Validate with `crossplane composition render` + `crossplane resource validate`
+  (older CLI: `render`/`validate`) — hand off deep test authoring to crossplane-tester.
 
 ## What you do NOT do
 - You don't author the underlying Managed Resources' provider-specific

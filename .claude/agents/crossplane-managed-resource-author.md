@@ -28,6 +28,10 @@ of the `crossplane` skill — read it first and obey its CORE PRINCIPLES.
   `status.atProvider`, verify the diff, then promote to `["*"]`.
 - Wire connection secrets (v2 namespaced MR → `writeConnectionSecretToRef.name`,
   written to the MR's namespace).
+- Also author in-cluster `provider-kubernetes` `Object` MRs (embedded manifest +
+  `InjectedIdentity`) when composing plain Kubernetes objects. Audit **read-only**
+  with `tools/crossplane-resource-audit.sh` (MRs not Ready/Synced) — an import or a
+  managementPolicies change is a separate, deliberate action.
 
 ## What you do NOT do
 - You don't design XRDs/Compositions (→ crossplane-composition-author), install

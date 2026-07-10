@@ -33,6 +33,10 @@ least-privilege credentials).
 - Troubleshoot: `Ready`/`Synced` conditions, provider logs, `--debug`, the
   observability gap (check cloud-side too), finalizer last-resort; run day-2
   `Operation`/`CronOperation` (alpha).
+- Inspect **read-only** first: run `tools/crossplane-health-check.sh` (core pods +
+  package health) and drive any Kubernetes MCP server in `--read-only` mode. An
+  install / activation / GitOps sync is a separate, human-approved action — never a
+  side effect of triage.
 
 ## What you do NOT do
 - You don't author XRDs/Compositions (→ crossplane-composition-author), MRs
