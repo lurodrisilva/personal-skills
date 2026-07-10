@@ -18,6 +18,7 @@ skill's "Subagent Orchestration" table:
 - **Azure-SRE-Agent team** → `operations/azure-sre-agent/SKILL.md`
 - **Karpenter team** → `operations/karpenter-operations/SKILL.md`
 - **Azure-CLI team** → `platform-engineering/azure-cli/SKILL.md`
+- **GitHub-CLI team** → `platform-engineering/github-cli/SKILL.md`
 - **Azure-FinOps team** → `platform-engineering/azure-finops/SKILL.md`
 - **AWS-FinOps team** → `platform-engineering/aws-finops/SKILL.md`
 - **Kubernetes-FinOps team** → `operations/kubernetes-finops/SKILL.md`
@@ -68,6 +69,12 @@ skill's "Subagent Orchestration" table:
 | `azure-cli-config-extensions.md` | azure-cli | `az config` + `AZURE_{SECTION}_{NAME}` env surface + precedence, extensions + dynamic install, install/upgrade, proxy (`REQUESTS_CA_BUNDLE`) / telemetry; owns `az-config-audit.sh` |
 | `azure-cli-ci-automation.md` | azure-cli | `azure/login@v2` OIDC + CI hardening (`--only-show-errors`, telemetry off, pinned image), `--no-wait` + `az … wait` + `--ids @-`, exit codes |
 | `azure-cli-mcp-and-discovery.md` | azure-cli | Azure MCP Server (`microsoft/mcp`, reuses `az login`, namespace/readOnly) + MCP-vs-`az` decision, `az find`/`interactive`/`next` discovery, `az rest` escape hatch |
+| `github-cli-auth-identity.md` | github-cli | `gh auth` login methods (web/device/`--with-token`/`--hostname` GHES), token precedence (`GH_TOKEN`>`GITHUB_TOKEN`>keyring; `GH_ENTERPRISE_TOKEN`), PAT-vs-`GITHUB_TOKEN` / fine-grained-vs-classic, `setup-git`, multi-account `switch`; owns `gh-auth-check.sh` |
+| `github-cli-api-scripting.md` | github-cli | `gh api` REST/GraphQL escape hatch (`-f` string vs `-F` typed, GET→POST, `--paginate`/`--slurp`), `--json`/`--jq`/`--template` output shaping, `gh search`, repo-context resolution; owns `gh-api-inventory.sh` |
+| `github-cli-config-extensions.md` | github-cli | `gh config` + `GH_*` env surface + precedence, aliases (`$1`/`--shell`), extensions (install/`--pin`/supply-chain), completion, install/upgrade, exit codes (0/1/2/4), proxy; owns `gh-config-audit.sh` |
+| `github-cli-dev-workflow.md` | github-cli | `repo`/`pr`/`issue`/`release`/`label`/`ruleset`/`gist` porcelain automation — PR create/`--fill`/merge `--squash --auto`, release `--generate-notes --verify-tag` + asset globs, `--json` scripting, `-R`/`GH_REPO` determinism |
+| `github-cli-actions-ci.md` | github-cli | `workflow`/`run` (`watch --exit-status`/`rerun --failed`/`download`)/`secret` (libsodium, stdin, repo/env/org/`--app`)/`variable`/`cache`/`attestation` (SLSA/Sigstore) + gh-in-Actions `GH_TOKEN` + least-privilege `permissions:` |
+| `github-cli-mcp-discovery.md` | github-cli | GitHub MCP Server (`github/github-mcp-server`, remote + local, toolsets, `--read-only`; already wired as the `github` plugin) + MCP-vs-`gh` decision, `gh <cmd> --help`/`gh reference` discovery |
 | `karpenter-nodepool-designer.md` | karpenter | NodePool + scheduling requirements (AWS `instance-*` / Azure `sku-*`), capacity types, `minValues`, weight/limits, static pools, consolidation-policy choice (EKS+AKS) |
 | `karpenter-nodeclass-author.md` | karpenter | `EC2NodeClass` (AMI alias pinning, subnet/SG discovery, role, IMDSv2) **and** `AKSNodeClass` (imageFamily, osDiskSizeGB, maxPods, kubelet) |
 | `karpenter-disruption-operator.md` | karpenter | consolidation/drift/expiration/interruption, budgets, `do-not-disrupt`, `terminationGracePeriod`, PDB interplay, NTH conflict (AWS), NAP disable (Azure) |
