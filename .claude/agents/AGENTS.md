@@ -17,6 +17,7 @@ skill's "Subagent Orchestration" table:
 - **Kubernetes-networking team** → `networking/kubernetes-networking/SKILL.md`
 - **Azure-SRE-Agent team** → `operations/azure-sre-agent/SKILL.md`
 - **Karpenter team** → `operations/karpenter-operations/SKILL.md`
+- **Azure-CLI team** → `platform-engineering/azure-cli/SKILL.md`
 - **Azure-FinOps team** → `platform-engineering/azure-finops/SKILL.md`
 - **AWS-FinOps team** → `platform-engineering/aws-finops/SKILL.md`
 - **Kubernetes-FinOps team** → `operations/kubernetes-finops/SKILL.md`
@@ -62,6 +63,11 @@ skill's "Subagent Orchestration" table:
 | `azure-sre-sourcecode.md` | azure-sre-agent | deploy/release/config-change correlation across GitHub / Azure DevOps (read-only) |
 | `azure-sre-architecture.md` | azure-sre-agent | resource topology + dependency + blast-radius mapping (read-only) |
 | `azure-sre-scanning.md` | azure-sre-agent | scheduled security / compliance / drift sweeps (read-only) |
+| `azure-cli-auth-identity.md` | azure-cli | `az login` methods (interactive/SP/MI/OIDC), `create-for-rbac` least-privilege scoping, accounts/subscriptions/tenants, sovereign clouds; owns `az-identity-check.sh` |
+| `azure-cli-query-output.md` | azure-cli | client-side JMESPath `--query` (multiselect list/hash, filter, functions, quoting traps) + the seven `-o` formats (tsv/table gotchas); owns `az-resource-inventory.sh` |
+| `azure-cli-config-extensions.md` | azure-cli | `az config` + `AZURE_{SECTION}_{NAME}` env surface + precedence, extensions + dynamic install, install/upgrade, proxy (`REQUESTS_CA_BUNDLE`) / telemetry; owns `az-config-audit.sh` |
+| `azure-cli-ci-automation.md` | azure-cli | `azure/login@v2` OIDC + CI hardening (`--only-show-errors`, telemetry off, pinned image), `--no-wait` + `az … wait` + `--ids @-`, exit codes |
+| `azure-cli-mcp-and-discovery.md` | azure-cli | Azure MCP Server (`microsoft/mcp`, reuses `az login`, namespace/readOnly) + MCP-vs-`az` decision, `az find`/`interactive`/`next` discovery, `az rest` escape hatch |
 | `karpenter-nodepool-designer.md` | karpenter | NodePool + scheduling requirements (AWS `instance-*` / Azure `sku-*`), capacity types, `minValues`, weight/limits, static pools, consolidation-policy choice (EKS+AKS) |
 | `karpenter-nodeclass-author.md` | karpenter | `EC2NodeClass` (AMI alias pinning, subnet/SG discovery, role, IMDSv2) **and** `AKSNodeClass` (imageFamily, osDiskSizeGB, maxPods, kubelet) |
 | `karpenter-disruption-operator.md` | karpenter | consolidation/drift/expiration/interruption, budgets, `do-not-disrupt`, `terminationGracePeriod`, PDB interplay, NTH conflict (AWS), NAP disable (Azure) |

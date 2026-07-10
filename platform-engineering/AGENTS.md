@@ -16,6 +16,7 @@ None at this level — all content lives in subdirectories.
 | `auth0-kong-authZ-authN/` | Kong API Gateway + Auth0 OIDC edge authN/authZ — `openid-connect` plugin, JWKS-not-introspection, `audience`-pinned tokens, KIC + Ingress and KGO + Gateway API paths (see `auth0-kong-authZ-authN/AGENTS.md`) |
 | `aws-cli/` | AWS CLI v2 — command structure, two-file config model, credential resolution, JMESPath `--query`, `file://` vs `fileb://`, pagination + waiters, SSO / IRSA / OIDC over long-lived keys (see `aws-cli/AGENTS.md`) |
 | `aws-finops/` | **FinOps on AWS** — the FinOps Framework (Inform→Optimize→Operate; four domains), the AWS Well-Architected Cost Optimization pillar + FOCUS billing schema; allocation, usage/rate optimization, budgeting/forecasting, governance, EKS + AI cost. Sibling of `azure-finops`; delegates CLI mechanics to `aws-cli`. Ships 3 read-only `aws` cost scripts under `tools/` + a 5-agent FinOps team in `../.claude/agents/` (see `aws-finops/AGENTS.md`) |
+| `azure-cli/` | Azure CLI (`az`) — command-group grammar, identity-first auth (managed identity / OIDC over long-lived secrets), client-side JMESPath `--query` + output formats, `az config` + `AZURE_*` env surface, extensions, waiters/`--ids`, sovereign clouds, the `az rest` escape hatch, and the Azure MCP Server (referenced). Sibling of `aws-cli`; `azure-finops` uses its `az` mechanics. Ships 3 read-only `az` triage scripts under `tools/` + a 5-agent Azure-CLI team in `../.claude/agents/` (see `azure-cli/AGENTS.md`) |
 | `azure-cosmosdb-mongo-vcore/` | Cosmos DB for MongoDB vCore expertise notes — `dns-zone-group show` exit-0-on-missing CLI bug, SRV-not-A `mongocluster.cosmos.azure.com` TCP-probe trap, M30+ HA tier minimum (see `azure-cosmosdb-mongo-vcore/AGENTS.md`) |
 | `azure-finops/` | **FinOps on Azure** — the FinOps Framework (Inform→Optimize→Operate; four domains), the WAF Cost Optimization pillar (CO:01–CO:14) + FOCUS billing schema; allocation, usage/rate optimization, budgeting/forecasting, governance, AKS + AI cost. Ships 3 read-only `az` cost scripts under `tools/` + a 5-agent FinOps team in `../.claude/agents/` (see `azure-finops/AGENTS.md`) |
 | `azure-pg-flex/` | Azure Postgres Flexible Server observability playbook — metrics two-layer model, headroom-vs-raw diagnostic doctrine, REST API surface, two log surfaces (Server Logs + Diagnostic Settings categories) (see `azure-pg-flex/AGENTS.md`) |
@@ -56,6 +57,6 @@ None at this level — all content lives in subdirectories.
 ### Internal
 - `../README.md` — references each skill in the "Platform Engineering" table; rename → README update required.
 - `../scripts/validate-skills.sh` — validates this tree (its `DOMAIN_DIRS` includes `platform-engineering/`); CI runs it on every push and PR.
-- `../.claude/agents/` — companion subagent teams that some skills here orchestrate (`crossplane`, `kubernetes-operator-golang`, `dynatrace`, `azure-finops`, `aws-finops`, `terraform-iac`).
+- `../.claude/agents/` — companion subagent teams that some skills here orchestrate (`crossplane`, `kubernetes-operator-golang`, `dynatrace`, `azure-finops`, `aws-finops`, `terraform-iac`, `azure-cli`).
 
 <!-- MANUAL: -->
