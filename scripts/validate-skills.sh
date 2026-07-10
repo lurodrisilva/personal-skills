@@ -127,6 +127,30 @@ for domain in "${DOMAIN_DIRS[@]}"; do
 done
 
 # --------------------------------------------------------------------------- #
+# 3. README skills badge count must match the number of SKILL.md files
+#    (badge covers the whole collection, including ai/ — which is listed in the
+#    README tables but is not schema-validated above via DOMAIN_DIRS).
+# --------------------------------------------------------------------------- #
+echo ""
+echo "==> Checking README skills badge count..."
+readme="$REPO_ROOT/README.md"
+badge_count=$(grep -oE 'skills-[0-9]+-blue' "$readme" | head -1 | grep -oE '[0-9]+' || true)
+skill_count=0
+for domain in "${DOMAIN_DIRS[@]}" ai; do
+  domain_dir="$REPO_ROOT/$domain"
+  [[ -d "$domain_dir" ]] || continue
+  n=$(find "$domain_dir" -name SKILL.md | wc -l | tr -d ' ')
+  skill_count=$((skill_count + n))
+done
+if [[ -z "$badge_count" ]]; then
+  err "README.md: skills badge (skills-N-blue) not found"
+elif [[ "$badge_count" != "$skill_count" ]]; then
+  err "README.md: skills badge says $badge_count but found $skill_count SKILL.md file(s) — bump the badge"
+else
+  info "skills badge matches SKILL.md count ($skill_count)"
+fi
+
+# --------------------------------------------------------------------------- #
 # Summary
 # --------------------------------------------------------------------------- #
 echo ""
