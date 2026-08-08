@@ -28,7 +28,13 @@ description: >-
   PVCs", "ResourceQuota cost governance", "eliminate kubernetes waste". Triggers on
   surfaces — `resources.requests` / `limits`, `kubectl top`, OpenCost/Kubecost
   Allocation API, VPA `recommendation` mode, `ResourceQuota` / `LimitRange`, Spot
-  node-pool labels. Scope boundary — **cloud-account FinOps** (subscription/billing,
+  node-pool labels. Scope boundary — **OpenCost the tool** (installing it, the Helm
+  chart + `values.yaml`, the Prometheus scrape config, `cloud-integration.json` and
+  cloud pricing credentials, the Allocation / Assets / CloudCost API and its query
+  parameters, CSV / Parquet export, plugins, the OpenCost MCP server, and OpenCost
+  troubleshooting) → `../../platform-engineering/opencost/`; this skill *consumes*
+  the numbers OpenCost produces rather than operating OpenCost itself.
+  **cloud-account FinOps** (subscription/billing,
   reservations vs savings plans, tag hierarchy, the cloud bill) → `azure-finops`
   (Azure) — this skill hands the *node/VM commitment* buy there; **node-lifecycle
   autoscaler internals** (NodePool / NodeClass / consolidation / NAP) →
@@ -97,6 +103,13 @@ three buckets:
 > - **Generic cluster ops** — scheduling, HPA/VPA *mechanics*, capacity, upgrades →
 >   `kubernetes-operations` (`k8s-autoscaling-engineer` / `k8s-cluster-operator`).
 > - **Agentic MCP tool-belt + blast-radius doctrine** → `agentic-k8s-ops`.
+> - **OpenCost the tool** — installing and operating it: the Helm chart and its
+>   `values.yaml`, the `job_name: opencost` Prometheus scrape config,
+>   `cloud-integration.json` + cloud pricing credentials, the Allocation / Assets /
+>   CloudCost API and every query parameter, CSV / Parquet export, plugins, the
+>   OpenCost MCP server, and OpenCost troubleshooting →
+>   `../../platform-engineering/opencost/`. That skill produces the number; **this
+>   skill decides what to do about it.**
 > This skill owns the **cost lens**: allocation math, right-sizing, waste, governance.
 
 > **Version gate (read first).** OpenCost / Kubecost, the VPA, KEDA, the descheduler,
@@ -171,8 +184,12 @@ are the coarse boundary; labels are the flexible one. **Unlabeled = unallocatabl
 kubectl create namespace opencost
 helm install opencost --repo https://opencost.github.io/opencost-helm-chart opencost \
   --namespace opencost
-# metrics at :9003/metrics (Prometheus scrape), UI via port-forward :9090
+# :9003 = API + /metrics (add the `job_name: opencost` scrape config — without it
+#         history never lands and idle goes NEGATIVE) · :9090 = UI · :8081 = MCP
 ```
+  Install topology, Prometheus wiring, cloud pricing credentials, the API parameters,
+  exports, and troubleshooting all live in `../../platform-engineering/opencost/` —
+  go there to *operate* OpenCost; stay here to *act on* what it reports.
 - **Pricing:** defaults to public list prices; override with negotiated / reserved / spot
   rates so allocation reflects the real bill. Reconcile to the cloud invoice via **FOCUS**
   (cross-cloud) — hand the invoice-level view to the cloud FinOps skill.

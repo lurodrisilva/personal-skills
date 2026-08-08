@@ -26,6 +26,7 @@ skill's "Subagent Orchestration" table:
 - **GitOps-ArgoCD team** → `operations/gitops-argocd/SKILL.md`
 - **Observability-Stack team** → `operations/observability-stack/SKILL.md`
 - **Platform-Architect team** → `platform-engineering/platform-architect/SKILL.md`
+- **OpenCost team** → `platform-engineering/opencost/SKILL.md`
 
 ## Key Files
 | File | Team | Description |
@@ -117,6 +118,11 @@ skill's "Subagent Orchestration" table:
 | `developer-experience-lead.md` | platform-architect | Phase D — DORA four keys + SPACE + adoption/NPS scorecard, feedback loops; reads `dora-metrics-report.sh` |
 | `governance-standards-author.md` | platform-architect | Phase E — ADR (MADR)/RFC, guardrails-not-gates, technology-radar governance, off-road exceptions; owns `adr-lint.sh` |
 | `platform-maturity-assessor.md` | platform-architect | Phase F — CNCF maturity assessment (5 aspects × 4 levels), gap analysis, roadmap sequencing; owns `platform-maturity-scan.sh` (model=opus) |
+| `opencost-installer.md` | opencost | Phase A — Helm/manifest/Docker/exporter-only deployment, the `job_name: opencost` scrape config, ports 9003 (API+`/metrics`) / 9090 (UI) / 8081 (MCP), UI ingress, multi-cluster `CLUSTER_ID` filtering; owns `opencost-health.sh` |
+| `opencost-cloud-integrator.md` | opencost | Phase B — `cloud-integration.json` (AWS Athena/CUR, Azure storage+RateCard, GCP BigQuery, OCI), the `cloud-costs` secret, `authorizerType` selection, IRSA + `GCPWorkloadIdentity`, custom/on-prem pricing; owns `opencost-pricing-check.sh` |
+| `opencost-api-analyst.md` | opencost | Phase C — `/allocation`, `/assets`, `/cloudCost`, `/customCost/*`; `window`/`aggregate`/`step`/`resolution`/`includeIdle`/`shareIdle`/`idleByNode`; `listCost` vs `netCost` variants; `kubectl cost`; owns `opencost-allocation-summary.sh` |
+| `opencost-export-integrator.md` | opencost | Phase D — CSV (`EXPORT_CSV_*`) + Parquet CronJob export, carbon estimates (KG CO2e), the plugin framework (Datadog/OpenAI/MongoDB Atlas), and the MCP server on 8081 |
+| `opencost-troubleshooter.md` | opencost | Phase E — 500s from `/allocation`, negative idle, zero pricing, missing cloud integrations, GCP Workload Identity, NGINX address-family, EKS PVC Pending; `/logs/level` debug toggle |
 
 ## Subdirectories
 None.
@@ -206,6 +212,10 @@ None.
 - `../../operations/gitops-argocd/SKILL.md` — the contract the GitOps-ArgoCD team reads
   first and enforces (CORE PRINCIPLES + Git-is-the-single-source-of-truth +
   gated-prod-sync + AppProject blast-radius).
+- `../../platform-engineering/opencost/SKILL.md` — the contract the OpenCost team reads
+  first and enforces (CORE PRINCIPLES + name-the-pricing-source + allocation-is-
+  max(request,usage) + idle-is-a-cluster-fact + no-scrape-target-no-data + the
+  read-only-analysis / gated-change doctrine).
 - `../../operations/observability-stack/SKILL.md` — the contract the Observability-Stack
   team reads first and enforces (CORE PRINCIPLES + three-signals-one-context +
   alert-on-SLO-burn + everything-as-code + the read-only-to-observe doctrine).
