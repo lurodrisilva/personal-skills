@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-04-25 | Updated: 2026-07-07 | DEEPINIT: 2026-07-02 -->
+<!-- Generated: 2026-04-25 | Updated: 2026-08-08 | DEEPINIT: 2026-08-08 -->
 
 # platform-engineering
 
@@ -31,6 +31,8 @@ None at this level — all content lives in subdirectories.
 | `kafka-strimzi-operator/` | Apache Kafka on Kubernetes via the Strimzi operator — KRaft-only role-split `KafkaNodePool`s, the verbatim `BrokerCapacity` API contract, Cruise Control rebalance modes, perf-test playbook against the four limiting resources (CPU / network-in / network-out / log disk), `Hex.Scaffold` consumer/producer integration notes (see `kafka-strimzi-operator/AGENTS.md`) |
 | `kubernetes-operator-golang/` | **Building** Kubernetes Operators in Go (kubebuilder go/v4 + controller-runtime) — CRD/API design, the level-based idempotent Reconcile loop, webhooks, RBAC, envtest, OLM packaging; ships a 5-agent operator team in `../.claude/agents/` (see `kubernetes-operator-golang/AGENTS.md`) |
 | `kusto-kql-api/` | Kusto / KQL telemetry-query API playbook — five REST endpoints, four service-specific base URLs, v1-vs-v2 response frames, the "200 OK with errors in body" trap, `innerunique` join trap, standalone `Microsoft.Azure.Kusto.Language` parser for CI gates (see `kusto-kql-api/AGENTS.md`) |
+| `opencost/` | **OpenCost** (CNCF) — the *measurement plane* for Kubernetes cost and the reference implementation of the OpenCost Specification: deployment (Helm / manifest / Docker / exporter-only / guided / Tilt dev), the `job_name: opencost` Prometheus wiring, ports 9003 (API + `/metrics`) / 9090 (UI) / 8081 (MCP), multi-cluster single-source-of-data, cloud pricing (`cloud-integration.json` for AWS/Azure/GCP/OCI + custom on-prem pricing), the Allocation / Assets / CloudCost / CustomCost API, CSV + Parquet export, carbon estimates, the plugin framework, and the read-only MCP surface. **Boundary partner of `../operations/kubernetes-finops/`**: this skill produces the cost number, that one decides what to do about it. Ships 3 read-only triage scripts under `tools/` + a 5-agent OpenCost team in `../.claude/agents/` (see `opencost/AGENTS.md`) |
+| `platform-architect/` | **Distinguished platform-engineering architecture** — the capstone that decides *what* the platform offers and delegates the *how* to the sibling skills: platform-as-a-product strategy, the five-plane IDP reference architecture, golden paths, Team Topologies + cognitive load, DORA/SPACE + adoption metrics, ADR/RFC governance, and the CNCF Platform Engineering Maturity Model. Ships 3 read-only assessment scripts under `tools/` + a 6-agent team in `../.claude/agents/` (see `platform-architect/AGENTS.md`) |
 | `terraform-iac/` | **Infrastructure as Code with Terraform / OpenTofu** — the `plan → review → gated apply` lifecycle: HCL2 module authoring, remote state + locking (S3+DynamoDB / azurerm / gcs / TFC-HCP), providers + short-lived OIDC/assume-role/workload-identity auth, plan review + policy-as-code (OPA/Conftest/Sentinel), testing (`terraform test`/terratest/tflint/tfsec/checkov), and drift; ships 3 read-only `terraform` scripts under `tools/` + a 5-agent IaC team in `../.claude/agents/` (see `terraform-iac/AGENTS.md`) |
 | `wiremock-api-mocks/` | Shared cluster-wide WireMock mock server in `testing-system` namespace — stubs declared in consumer Helm values, registered via Admin API at install/upgrade (see `wiremock-api-mocks/AGENTS.md`) |
 
@@ -58,6 +60,9 @@ None at this level — all content lives in subdirectories.
 ### Internal
 - `../README.md` — references each skill in the "Platform Engineering" table; rename → README update required.
 - `../scripts/validate-skills.sh` — validates this tree (its `DOMAIN_DIRS` includes `platform-engineering/`); CI runs it on every push and PR.
-- `../.claude/agents/` — companion subagent teams that some skills here orchestrate (`crossplane`, `kubernetes-operator-golang`, `dynatrace`, `azure-finops`, `aws-finops`, `terraform-iac`, `azure-cli`, `github-cli`).
+- `../.claude/agents/` — companion subagent teams that some skills here orchestrate (`crossplane`, `kubernetes-operator-golang`, `dynatrace`, `azure-finops`, `aws-finops`, `terraform-iac`, `azure-cli`, `github-cli`, `opencost`, `platform-architect`).
+- `../operations/kubernetes-finops/` — boundary partner of `opencost/`. The two skills
+  deliberately split tool-vs-practice and cross-reference each other; changing one
+  side's scope means updating the other.
 
 <!-- MANUAL: -->

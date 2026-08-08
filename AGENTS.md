@@ -1,4 +1,4 @@
-<!-- Generated: 2026-04-25 | Updated: 2026-07-02 | DEEPINIT: 2026-07-02 -->
+<!-- Generated: 2026-04-25 | Updated: 2026-08-08 | DEEPINIT: 2026-08-08 -->
 
 # personal-skills
 
@@ -25,7 +25,8 @@ Distribution repository for **Claude Code / opencode skills**. Each leaf directo
 | `scripts/` | Local + CI validation tooling for SKILL.md (see `scripts/AGENTS.md`) |
 | `omc-learned/` | Single-insight expertise notes captured by `/oh-my-claudecode:learner` — staging ground for future SKILL.md promotion; not loaded by validator (see `omc-learned/AGENTS.md`) |
 | `.claude/` | Repo-scoped Claude Code config — committed subagent definitions that skills orchestrate, plus local-only settings (see `.claude/AGENTS.md`) |
-| `.github/workflows/` | CI workflow that runs `scripts/validate-skills.sh` on every push and PR |
+| `.github/` | GitHub platform config — CI only; the `validate-skills.sh` gate on every push and PR (see `.github/AGENTS.md`) |
+| `.tokensave/` | Committed state for the third-party `tokensave` indexing tool — machine-written, never hand-edited, read by nothing in this repo (see `.tokensave/AGENTS.md`) |
 
 ## For AI Agents
 
@@ -34,6 +35,21 @@ Distribution repository for **Claude Code / opencode skills**. Each leaf directo
 - Adding a skill requires picking the correct domain directory **first** (`coding/` vs `platform-engineering/` vs `operations/` vs `security/` vs `networking/` — build skills vs infra skills vs Day-2/run-it skills vs secure/harden/threat-model skills vs networking-plane/CNI skills), then a kebab-case sub-directory, then a `SKILL.md` matching the contract documented in `CLAUDE.md`.
 - Directory names are stable references — `README.md` tables and external docs link to them. Do not rename a skill directory without updating `README.md`.
 - The frontmatter `name:` field is independent of the directory name (e.g. `coding/dotnet-hex-clean/` declares `name: dotnet-clean-arch`). Both forms are valid.
+- **Adding a skill touches five places, not one.** The validator only checks the
+  `SKILL.md`, so the other four drift silently: (1) the skill's own `SKILL.md`,
+  (2) a sibling `AGENTS.md` in the new skill directory, (3) a new row in the **parent
+  domain's** `AGENTS.md` subdirectory table, (4) the `README.md` domain table **and**
+  the skills badge count, (5) `.claude/agents/AGENTS.md` if the skill ships companion
+  subagents. Steps 3 and 5 are the ones most often missed.
+- **`AGENTS.md` hierarchy.** Every `AGENTS.md` except this root one opens with an HTML
+  comment naming its parent — the literal form is `Parent:` followed by the relative
+  path, normally `../AGENTS.md`. (It is spelled out rather than shown verbatim here
+  because tooling detects parents with a plain `grep` for that comment, and a literal
+  example in this file would make the root look like a child.) A directory that is
+  empty, or that holds only
+  git-ignored local state (e.g. `coding/.claude/`, which contains just an ignored
+  `settings.local.json`), intentionally gets **no** `AGENTS.md` — don't "fix" those as
+  gaps. `.omc/` is git-ignored per-clone state and is likewise excluded.
 
 ### Testing Requirements
 - Run `./scripts/validate-skills.sh` before every push.
