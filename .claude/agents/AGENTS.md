@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-06-28 | Updated: 2026-07-07 -->
+<!-- Generated: 2026-06-28 | Updated: 2026-08-28 -->
 
 # agents
 
@@ -27,6 +27,7 @@ skill's "Subagent Orchestration" table:
 - **Observability-Stack team** → `operations/observability-stack/SKILL.md`
 - **Platform-Architect team** → `platform-engineering/platform-architect/SKILL.md`
 - **OpenCost team** → `platform-engineering/opencost/SKILL.md`
+- **Hermes-Agent team** → `ai/hermes-agent/SKILL.md`
 
 ## Key Files
 | File | Team | Description |
@@ -123,6 +124,12 @@ skill's "Subagent Orchestration" table:
 | `opencost-api-analyst.md` | opencost | Phase C — `/allocation`, `/assets`, `/cloudCost`, `/customCost/*`; `window`/`aggregate`/`step`/`resolution`/`includeIdle`/`shareIdle`/`idleByNode`; `listCost` vs `netCost` variants; `kubectl cost`; owns `opencost-allocation-summary.sh` |
 | `opencost-export-integrator.md` | opencost | Phase D — CSV (`EXPORT_CSV_*`) + Parquet CronJob export, carbon estimates (KG CO2e), the plugin framework (Datadog/OpenAI/MongoDB Atlas), and the MCP server on 8081 |
 | `opencost-troubleshooter.md` | opencost | Phase E — 500s from `/allocation`, negative idle, zero pricing, missing cloud integrations, GCP Workload Identity, NGINX address-family, EKS PVC Pending; `/logs/level` debug toggle |
+| `hermes-installer-operator.md` | hermes-agent | Phase A — script-only install contract, platform tiers, `~/.hermes` directory contract, CLI/TUI, sessions/resume, worktrees, doctor/update/backup, cost hygiene; owns `hermes-env-audit.sh` |
+| `hermes-config-secrets.md` | hermes-agent | Phase B — `.env` vs `config.yaml` split, profiles + one-process-per-profile, `distribution.yaml` distributions, secret sources (Bitwarden/1Password/command + precedence), iron-proxy egress, safety env vars; owns `hermes-profile-inventory.sh` |
+| `hermes-skills-memory-engineer.md` | hermes-agent | Phase C — SKILL.md + `metadata.hermes`, hub + trust levels, curator lifecycle, MEMORY.md/USER.md caps + 9 external providers, context-file precedence, SOUL.md, `@`-references |
+| `hermes-automation-gateway-engineer.md` | hermes-agent | Phase D — cron (drift guard, `wakeAgent`, `[SILENT]`), heartbeat, four hook systems, webhooks, gateway default-deny auth, dashboard 9119 fail-closed auth, API server 8642; owns `hermes-surface-probe.sh` |
+| `hermes-provider-integrator.md` | hermes-agent | Phase E — 30+ provider slugs + OAuth quirks, custom `providers.<name>`, fallbacks/routing/Pareto, 64k-context local LLMs, MCP client/server + Hermes Cloud MCP, Python library |
+| `hermes-extension-developer.md` | hermes-agent | Phase F — architecture (narrow waist), prompt assembly tiers, `registry.register` tool contract, `api_mode` providers, platform adapters, all plugin types, `ctx.llm` trust gates, subagent lifecycle (model=opus) |
 
 ## Subdirectories
 None.
@@ -161,7 +168,10 @@ None.
   gitops-argocd: application-author → sync-operator → drift-health → multicluster
   (flux-gitops-operator = the Flux sibling); observability-stack:
   otel-collector-engineer → prometheus-rules-author → loki-tempo-correlation →
-  grafana-dashboard-author → slo-alerting-engineer).
+  grafana-dashboard-author → slo-alerting-engineer; hermes-agent:
+  installer-operator → config-secrets → {skills-memory-engineer |
+  automation-gateway-engineer | provider-integrator} → extension-developer for
+  code-level work).
 - These agents are **repo-scoped** (see `../AGENTS.md`). If you add an agent, also
   add it to the owning skill's Subagent Orchestration table and that skill dir's
   `AGENTS.md` "Companion Subagents" section; if you rename one, update both sides.
@@ -219,6 +229,10 @@ None.
 - `../../operations/observability-stack/SKILL.md` — the contract the Observability-Stack
   team reads first and enforces (CORE PRINCIPLES + three-signals-one-context +
   alert-on-SLO-burn + everything-as-code + the read-only-to-observe doctrine).
+- `../../ai/hermes-agent/SKILL.md` — the contract the Hermes-Agent team reads
+  first and enforces (CORE PRINCIPLES + the script-only install contract + the
+  `.env`/`config.yaml` split + the 64k context floor + one-process-per-profile +
+  read-only inspection / gated, human-approved actions).
 
 ### External
 - Claude Code subagent runtime (loads `tools` / `model` from frontmatter).

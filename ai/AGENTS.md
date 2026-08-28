@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-06-03 | Updated: 2026-06-03 | DEEPINIT: 2026-06-03 -->
+<!-- Generated: 2026-06-03 | Updated: 2026-08-28 | DEEPINIT: 2026-06-03 -->
 
 # ai
 
@@ -13,6 +13,7 @@ None at this level — all content lives in subdirectories.
 | Directory | Purpose |
 |-----------|---------|
 | `graphify/` | Graphify codebase knowledge-graph CLI/MCP — `graphifyy` package, `/graphify` slash command, NetworkX `graph.json`, tree-sitter + LLM extraction, MCP serve, PR impact (see `graphify/AGENTS.md`) |
+| `hermes-agent/` | Hermes Agent (Nous Research) autonomous agent framework — script-only install, `~/.hermes` config contract, profiles/distributions, skills + memory + SOUL.md, cron/hooks/gateway, providers + MCP client/server, iron-proxy egress; ships 3 read-only `tools/` scripts + 6 companion subagents in `.claude/agents/` (see `hermes-agent/AGENTS.md`) |
 
 ## For AI Agents
 
