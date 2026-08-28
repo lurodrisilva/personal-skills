@@ -14,6 +14,7 @@ None at this level — all content lives in subdirectories.
 |-----------|---------|
 | `graphify/` | Graphify codebase knowledge-graph CLI/MCP — `graphifyy` package, `/graphify` slash command, NetworkX `graph.json`, tree-sitter + LLM extraction, MCP serve, PR impact (see `graphify/AGENTS.md`) |
 | `hermes-agent/` | Hermes Agent (Nous Research) autonomous agent framework — script-only install, `~/.hermes` config contract, profiles/distributions, skills + memory + SOUL.md, cron/hooks/gateway, providers + MCP client/server, iron-proxy egress; ships 3 read-only `tools/` scripts + 6 companion subagents in `.claude/agents/` (see `hermes-agent/AGENTS.md`) |
+| `supermemory/` | Supermemory (supermemory.ai) memory/context API for agentic workflows — v3/v4 REST (documents/conversations/search/memories/profiles/container-tags/connections/settings), TS + Python SDKs, `@supermemory/tools` v2 framework wrappers, Memory MCP + Docs MCP + Claude Code plugin, self-hosted single binary on :6767; ships 3 read-only `tools/` scripts + 5 companion subagents in `.claude/agents/` (see `supermemory/AGENTS.md`) |
 
 ## For AI Agents
 
