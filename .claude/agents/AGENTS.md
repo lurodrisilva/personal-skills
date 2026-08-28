@@ -28,6 +28,7 @@ skill's "Subagent Orchestration" table:
 - **Platform-Architect team** → `platform-engineering/platform-architect/SKILL.md`
 - **OpenCost team** → `platform-engineering/opencost/SKILL.md`
 - **Hermes-Agent team** → `ai/hermes-agent/SKILL.md`
+- **Supermemory team** → `ai/supermemory/SKILL.md`
 
 ## Key Files
 | File | Team | Description |
@@ -130,6 +131,11 @@ skill's "Subagent Orchestration" table:
 | `hermes-automation-gateway-engineer.md` | hermes-agent | Phase D — cron (drift guard, `wakeAgent`, `[SILENT]`), heartbeat, four hook systems, webhooks, gateway default-deny auth, dashboard 9119 fail-closed auth, API server 8642; owns `hermes-surface-probe.sh` |
 | `hermes-provider-integrator.md` | hermes-agent | Phase E — 30+ provider slugs + OAuth quirks, custom `providers.<name>`, fallbacks/routing/Pareto, 64k-context local LLMs, MCP client/server + Hermes Cloud MCP, Python library |
 | `hermes-extension-developer.md` | hermes-agent | Phase F — architecture (narrow waist), prompt assembly tiers, `registry.register` tool contract, `api_mode` providers, platform adapters, all plugin types, `ctx.llm` trust gates, subagent lifecycle (model=opus) |
+| `supermemory-ingestion-engineer.md` | supermemory | Phase A — documents/files/batch/`/v4/conversations` ingest, `customId` + diff billing, dreaming/taskType knobs, containerTag mechanics + async merge, metadata rules, connectors OAuth sync, org settings |
+| `supermemory-retrieval-engineer.md` | supermemory | Phase B — `/v4/search` (searchMode/threshold/rerank/rewriteQuery/aggregate/include) vs `/v3/search` RAG, filter syntax, profiles + buckets, `/v4/memories` create/version/soft-forget/`forget-matching` (dryRun-first); owns `supermemory-search-probe.sh` |
+| `supermemory-sdk-integrator.md` | supermemory | Phase C — TS/Python SDKs, `@supermemory/tools` v2 (`/ai-sdk` `/openai` `/mastra` `/claude-memory`, required `customId`), Python agent-framework patterns, MS Agent Framework, v2 migration; owns `supermemory-config-audit.sh` |
+| `supermemory-platform-operator.md` | supermemory | Phase D — Memory MCP (OAuth, 7 tools) + Docs MCP + `claude-supermemory` plugin, self-hosted `supermemory local` (:6767), scoped API keys, billing meters + 402 triage; owns `supermemory-api-probe.sh` |
+| `supermemory-agentic-architect.md` | supermemory | Phase E — memory architecture for agents: tag schemes, automatic-vs-tool-based injection, write policy, read-your-writes barriers, latency budgets, hygiene cadence, Mem0/Zep migration (model=opus) |
 
 ## Subdirectories
 None.
@@ -171,7 +177,9 @@ None.
   grafana-dashboard-author → slo-alerting-engineer; hermes-agent:
   installer-operator → config-secrets → {skills-memory-engineer |
   automation-gateway-engineer | provider-integrator} → extension-developer for
-  code-level work).
+  code-level work; supermemory: agentic-architect designs first →
+  ingestion-engineer → retrieval-engineer → {sdk-integrator |
+  platform-operator} implement).
 - These agents are **repo-scoped** (see `../AGENTS.md`). If you add an agent, also
   add it to the owning skill's Subagent Orchestration table and that skill dir's
   `AGENTS.md` "Companion Subagents" section; if you rename one, update both sides.
@@ -232,6 +240,11 @@ None.
 - `../../ai/hermes-agent/SKILL.md` — the contract the Hermes-Agent team reads
   first and enforces (CORE PRINCIPLES + the script-only install contract + the
   `.env`/`config.yaml` split + the 64k context floor + one-process-per-profile +
+  read-only inspection / gated, human-approved actions).
+- `../../ai/supermemory/SKILL.md` — the contract the Supermemory team reads
+  first and enforces (CORE PRINCIPLES + containerTag-on-every-call + the
+  three-artifact model + customId dedupe/diff-billing + async-dreaming
+  read-your-writes + soft forgetting with dryRun-first + scoped keys +
   read-only inspection / gated, human-approved actions).
 
 ### External
