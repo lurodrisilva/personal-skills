@@ -28,6 +28,7 @@ skill's "Subagent Orchestration" table:
 - **Platform-Architect team** → `platform-engineering/platform-architect/SKILL.md`
 - **OpenCost team** → `platform-engineering/opencost/SKILL.md`
 - **Vercel team** → `platform-engineering/vercel/SKILL.md`
+- **Vercel-Git-CICD team** → `platform-engineering/vercel-git-cicd/SKILL.md`
 - **Hermes-Agent team** → `ai/hermes-agent/SKILL.md`
 - **Supermemory team** → `ai/supermemory/SKILL.md`
 
@@ -133,6 +134,11 @@ skill's "Subagent Orchestration" table:
 | `vercel-cli-api-automator.md` | vercel | Phase D — CLI surface + canonical CI sequence (`pull → build → deploy --prebuilt`), tokens, REST API versioned paths + pagination + rate limits, `@vercel/sdk`, OIDC federation (unstable-`AWS_REGION` gotcha); owns `vercel-env-audit.sh` |
 | `vercel-observability-securer.md` | vercel | Phase E — runtime logs + retention, Drains + `x-vercel-signature`, `@vercel/otel`/traces, Deployment Protection + bypass-for-automation, WAF log→observe→enforce + attack mode, RBAC, audit logs |
 | `vercel-mcp-ai-integrator.md` | vercel | Phase F — Vercel MCP (`mcp.vercel.com` wiring, read tools free, `deploy_to_vercel` + quote-gated `buy_*` human-confirmed), AI Gateway (endpoints, keys/OIDC, budgets + 402, BYOK, AI SDK), agent-facing CLI |
+| `vercel-git-connector.md` | vercel-git-cicd | Phase A — provider matrix + connect/disconnect, permission matrices ("missing Git repository" triage), who-may-deploy (commit-author membership Pro vs Hobby, fork-PR authorization / Git Fork Protection), Require Verified Commits, Git LFS; owns `vercel-git-connection-audit.sh` |
+| `vercel-branch-flow-designer.md` | vercel-git-cicd | Phase B — production-branch resolution order + Branch Tracking, preview/staging phases + custom environments, `git.deploymentEnabled` minimatch (any-true-wins), queue/auto-cancel (`github.autoJobCancelation`), deploy-from-Git-reference, legacy `github.*` keys |
+| `vercel-pr-status-engineer.md` | vercel-git-cicd | Phase C — bot comments + dashboard silencing, commit statuses (consolidated + soft-fail), `deployment_status` vs `repository_dispatch` (`vercel.deployment.*` types, `client_payload.url`), e2e-after-preview pattern |
+| `vercel-build-gatekeeper.md` | vercel-git-cicd | Phase D — Ignored Build Step (exit 0 = SKIP, `VERCEL_GIT_PREVIOUS_SHA`, `turbo-ignore`, `--depth=10`), monorepo auto-skip, deploy hooks (URL-is-credential, 5/10 per project, 60/hr, `?buildCache=false`), `VERCEL_GIT_*` env surface; owns `vercel-ignore-step-doctor.sh` + `vercel-git-deployment-trace.sh` |
+| `vercel-external-ci-operator.md` | vercel-git-cicd | Phase E — GHES / Self-Managed GitLab / Bitbucket DC bridges (`pull → build → deploy --prebuilt`, no Git integration attached), Azure DevOps extension (`vercel-deployment-task@3` + `vercel-azdo-pr-comment-task@3`, build-validation policy), tag/release deploys |
 | `hermes-installer-operator.md` | hermes-agent | Phase A — script-only install contract, platform tiers, `~/.hermes` directory contract, CLI/TUI, sessions/resume, worktrees, doctor/update/backup, cost hygiene; owns `hermes-env-audit.sh` |
 | `hermes-config-secrets.md` | hermes-agent | Phase B — `.env` vs `config.yaml` split, profiles + one-process-per-profile, `distribution.yaml` distributions, secret sources (Bitwarden/1Password/command + precedence), iron-proxy egress, safety env vars; owns `hermes-profile-inventory.sh` |
 | `hermes-skills-memory-engineer.md` | hermes-agent | Phase C — SKILL.md + `metadata.hermes`, hub + trust levels, curator lifecycle, MEMORY.md/USER.md caps + 9 external providers, context-file precedence, SOUL.md, `@`-references |
@@ -186,7 +192,9 @@ None.
   grafana-dashboard-author → slo-alerting-engineer; vercel:
   project-deployer → {functions-engineer | domains-router} →
   cli-api-automator → observability-securer, with mcp-ai-integrator for the
-  agent surface; hermes-agent:
+  agent surface; vercel-git-cicd: git-connector → branch-flow-designer →
+  {pr-status-engineer | build-gatekeeper} → external-ci-operator for hosts the
+  integration can't reach; hermes-agent:
   installer-operator → config-secrets → {skills-memory-engineer |
   automation-gateway-engineer | provider-integrator} → extension-developer for
   code-level work; supermemory: agentic-architect designs first →
@@ -263,6 +271,12 @@ None.
   reads first and enforces (CORE PRINCIPLES + production-is-a-promotion +
   rollback-re-points-not-rebuilds + domain-card-is-DNS-source-of-truth +
   WAF-log-first + read-only inspection / gated, human-approved mutations).
+- `../../platform-engineering/vercel-git-cicd/SKILL.md` — the contract the
+  Vercel-Git-CICD team reads first and enforces (CORE PRINCIPLES +
+  every-push-deploys-by-default + ignore-step-exit-0-skips +
+  permission-follows-the-commit-author + deploy-hook-URL-is-a-credential +
+  bridge-don't-fake for self-hosted Git + read-only inspection / gated,
+  human-approved mutations).
 - `../../ai/hermes-agent/SKILL.md` — the contract the Hermes-Agent team reads
   first and enforces (CORE PRINCIPLES + the script-only install contract + the
   `.env`/`config.yaml` split + the 64k context floor + one-process-per-profile +
