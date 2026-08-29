@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-08-28 | Updated: 2026-08-28 -->
+<!-- Generated: 2026-08-28 | Updated: 2026-08-29 -->
 
 # hermes-agent
 
@@ -14,7 +14,7 @@ Skill that guides installing, configuring, operating, automating, integrating, a
 ## Subdirectories
 | Directory | Purpose |
 |-----------|---------|
-| `tools/` | Three READ-ONLY triage scripts: `hermes-env-audit.sh` (install + config-split audit), `hermes-profile-inventory.sh` (profiles/skills/cron/MCP/plugins/memory inventory), `hermes-surface-probe.sh` (dashboard 9119 / API server 8642 / gateway / egress status probes). No script mutates state. |
+| `tools/` | Three READ-ONLY triage scripts: `hermes-env-audit.sh` (install + config-split audit), `hermes-profile-inventory.sh` (profiles/skills/cron/MCP/plugins/memory inventory), `hermes-surface-probe.sh` (dashboard 9119 / API server 8642 / gateway / egress status probes). No script mutates state (see `tools/AGENTS.md`) |
 
 ## For AI Agents
 
