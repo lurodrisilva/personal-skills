@@ -27,6 +27,7 @@ skill's "Subagent Orchestration" table:
 - **Observability-Stack team** → `operations/observability-stack/SKILL.md`
 - **Platform-Architect team** → `platform-engineering/platform-architect/SKILL.md`
 - **OpenCost team** → `platform-engineering/opencost/SKILL.md`
+- **Vercel team** → `platform-engineering/vercel/SKILL.md`
 - **Hermes-Agent team** → `ai/hermes-agent/SKILL.md`
 - **Supermemory team** → `ai/supermemory/SKILL.md`
 
@@ -125,6 +126,12 @@ skill's "Subagent Orchestration" table:
 | `opencost-api-analyst.md` | opencost | Phase C — `/allocation`, `/assets`, `/cloudCost`, `/customCost/*`; `window`/`aggregate`/`step`/`resolution`/`includeIdle`/`shareIdle`/`idleByNode`; `listCost` vs `netCost` variants; `kubectl cost`; owns `opencost-allocation-summary.sh` |
 | `opencost-export-integrator.md` | opencost | Phase D — CSV (`EXPORT_CSV_*`) + Parquet CronJob export, carbon estimates (KG CO2e), the plugin framework (Datadog/OpenAI/MongoDB Atlas), and the MCP server on 8081 |
 | `opencost-troubleshooter.md` | opencost | Phase E — 500s from `/allocation`, negative idle, zero pricing, missing cloud integrations, GCP Workload Identity, NGINX address-family, EKS PVC Pending; `/logs/level` debug toggle |
+| `vercel-project-deployer.md` | vercel | Phase A — projects/Git/environments (custom envs, first-deploy-is-production trap), env-var targets + sensitivity, builds + monorepo/Turborepo, `ignoreCommand` (exit 0 = skip), deploy hooks, promote / instant rollback (no rebuild — env+crons not updated) / staged production, skew protection, retention; owns `vercel-project-status.sh` |
+| `vercel-functions-engineer.md` | vercel | Phase B — Functions runtimes + Fluid limits (`maxDuration`, 4.5 MB payload, memory-not-in-vercel.json), Routing Middleware (`middleware.ts`/`proxy`), caching + ISR (`x-vercel-cache`, header precedence), crons (`CRON_SECRET`, best-effort), image/OG, Blob / Global Config / Marketplace storage |
+| `vercel-domains-router.md` | vercel | Phase C — domains/DNS (domain-card rule, per-project CNAMEs, wildcard-needs-nameservers, CAA/Let's Encrypt), certs, `redirects`/`rewrites`/`headers`/`routes` + bulk redirects + order facts, regions; owns `vercel-domain-dns-check.sh` |
+| `vercel-cli-api-automator.md` | vercel | Phase D — CLI surface + canonical CI sequence (`pull → build → deploy --prebuilt`), tokens, REST API versioned paths + pagination + rate limits, `@vercel/sdk`, OIDC federation (unstable-`AWS_REGION` gotcha); owns `vercel-env-audit.sh` |
+| `vercel-observability-securer.md` | vercel | Phase E — runtime logs + retention, Drains + `x-vercel-signature`, `@vercel/otel`/traces, Deployment Protection + bypass-for-automation, WAF log→observe→enforce + attack mode, RBAC, audit logs |
+| `vercel-mcp-ai-integrator.md` | vercel | Phase F — Vercel MCP (`mcp.vercel.com` wiring, read tools free, `deploy_to_vercel` + quote-gated `buy_*` human-confirmed), AI Gateway (endpoints, keys/OIDC, budgets + 402, BYOK, AI SDK), agent-facing CLI |
 | `hermes-installer-operator.md` | hermes-agent | Phase A — script-only install contract, platform tiers, `~/.hermes` directory contract, CLI/TUI, sessions/resume, worktrees, doctor/update/backup, cost hygiene; owns `hermes-env-audit.sh` |
 | `hermes-config-secrets.md` | hermes-agent | Phase B — `.env` vs `config.yaml` split, profiles + one-process-per-profile, `distribution.yaml` distributions, secret sources (Bitwarden/1Password/command + precedence), iron-proxy egress, safety env vars; owns `hermes-profile-inventory.sh` |
 | `hermes-skills-memory-engineer.md` | hermes-agent | Phase C — SKILL.md + `metadata.hermes`, hub + trust levels, curator lifecycle, MEMORY.md/USER.md caps + 9 external providers, context-file precedence, SOUL.md, `@`-references |
@@ -174,7 +181,10 @@ None.
   gitops-argocd: application-author → sync-operator → drift-health → multicluster
   (flux-gitops-operator = the Flux sibling); observability-stack:
   otel-collector-engineer → prometheus-rules-author → loki-tempo-correlation →
-  grafana-dashboard-author → slo-alerting-engineer; hermes-agent:
+  grafana-dashboard-author → slo-alerting-engineer; vercel:
+  project-deployer → {functions-engineer | domains-router} →
+  cli-api-automator → observability-securer, with mcp-ai-integrator for the
+  agent surface; hermes-agent:
   installer-operator → config-secrets → {skills-memory-engineer |
   automation-gateway-engineer | provider-integrator} → extension-developer for
   code-level work; supermemory: agentic-architect designs first →
@@ -237,6 +247,10 @@ None.
 - `../../operations/observability-stack/SKILL.md` — the contract the Observability-Stack
   team reads first and enforces (CORE PRINCIPLES + three-signals-one-context +
   alert-on-SLO-burn + everything-as-code + the read-only-to-observe doctrine).
+- `../../platform-engineering/vercel/SKILL.md` — the contract the Vercel team
+  reads first and enforces (CORE PRINCIPLES + production-is-a-promotion +
+  rollback-re-points-not-rebuilds + domain-card-is-DNS-source-of-truth +
+  WAF-log-first + read-only inspection / gated, human-approved mutations).
 - `../../ai/hermes-agent/SKILL.md` — the contract the Hermes-Agent team reads
   first and enforces (CORE PRINCIPLES + the script-only install contract + the
   `.env`/`config.yaml` split + the 64k context floor + one-process-per-profile +
