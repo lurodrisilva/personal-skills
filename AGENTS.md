@@ -1,4 +1,4 @@
-<!-- Generated: 2026-04-25 | Updated: 2026-08-08 | DEEPINIT: 2026-08-08 -->
+<!-- Generated: 2026-04-25 | Updated: 2026-08-28 | DEEPINIT: 2026-08-28 -->
 
 # personal-skills
 
@@ -11,7 +11,7 @@ Distribution repository for **Claude Code / opencode skills**. Each leaf directo
 | `README.md` | User-facing index of available skills, SKILL.md format spec, and contribution guide |
 | `CLAUDE.md` | In-repo agent guidance: validator command, layout, SKILL.md contract, validator coverage |
 | `LICENSE` | BSD-3-Clause license text (matches `license:` frontmatter on every SKILL.md) |
-| `.gitignore` | Ignores `.omc/` (per-clone OMC state). `.claude/settings.local.json` is ignored via the user's global gitignore, not this file |
+| `.gitignore` | Ignores `.omc/` (per-clone OMC state) and `.serena/` (per-clone Serena MCP state). `.claude/settings.local.json` is ignored via the user's global gitignore, not this file |
 
 ## Subdirectories
 | Directory | Purpose |
@@ -49,7 +49,7 @@ Distribution repository for **Claude Code / opencode skills**. Each leaf directo
   empty, or that holds only
   git-ignored local state (e.g. `coding/.claude/`, which contains just an ignored
   `settings.local.json`), intentionally gets **no** `AGENTS.md` — don't "fix" those as
-  gaps. `.omc/` is git-ignored per-clone state and is likewise excluded.
+  gaps. `.omc/` and `.serena/` are git-ignored per-clone state and are likewise excluded.
 
 ### Testing Requirements
 - Run `./scripts/validate-skills.sh` before every push.

@@ -44,6 +44,7 @@ skill's "Subagent Orchestration" table:
 | `crossplane-package-publisher.md` | crossplane | Provider/Configuration/Function packages, `crossplane.yaml`, `xpkg build/push`, ImageConfig signing |
 | `crossplane-control-plane-operator.md` | crossplane | install, Providers, credentials/workload identity, GitOps (ArgoCD/Flux) delivery, troubleshooting |
 | `crossplane-tester.md` | crossplane | `crossplane render`/`validate`/`beta trace`, CI gate |
+| `crossplane-provider-developer.md` | crossplane | building a provider when none exists — Upjet vs native, `provider-template` scaffolding, `ExternalClient` Observe/Create/Update/Delete, `make reviewable`, `SetupGated` safe-start (model=opus for non-trivial controllers) |
 | `dynatrace-api-client.md` | dynatrace | plane/credential selection, tokens, Environment API v2, Settings 2.0, `nextPageKey` pagination, rate limits |
 | `dynatrace-dql-author.md` | dynatrace | DQL/Grail pipelines, `timeseries`, the `query:execute`/`poll` API, `storage:*` scopes (model=opus for complex queries) |
 | `dynatrace-otel-ingest-engineer.md` | dynatrace | OTLP ingest, the Dynatrace Collector distro, delta temporality, enrichment |
@@ -161,7 +162,8 @@ None.
   "what you do NOT do" hand-offs so each team stays composable (operator:
   scaffolder → designer → reconciler → tester → packager; crossplane:
   control-plane-operator → managed-resource-author → composition-author →
-  package-publisher → tester; dynatrace: api-client → {dql-author |
+  package-publisher → tester, with provider-developer up front when no
+  provider exists; dynatrace: api-client → {dql-author |
   otel-ingest-engineer | cloud-integrator} → monitoring-as-code; k8s-ops:
   workload-troubleshooter → {cluster-operator | autoscaling-engineer |
   security-rbac | network-storage}; k8s-security: threat-model → {cluster-hardener
@@ -247,6 +249,16 @@ None.
 - `../../operations/observability-stack/SKILL.md` — the contract the Observability-Stack
   team reads first and enforces (CORE PRINCIPLES + three-signals-one-context +
   alert-on-SLO-burn + everything-as-code + the read-only-to-observe doctrine).
+- `../../platform-engineering/azure-cli/SKILL.md` — the contract the Azure-CLI team
+  reads first and enforces (CORE PRINCIPLES + identity-first auth + read-only
+  inspection / gated credential changes).
+- `../../platform-engineering/github-cli/SKILL.md` — the contract the GitHub-CLI team
+  reads first and enforces (CORE PRINCIPLES + token precedence + least-privilege
+  `permissions:` + read-only review / gated mutations).
+- `../../platform-engineering/platform-architect/SKILL.md` — the contract the
+  Platform-Architect team reads first and enforces (CORE PRINCIPLES +
+  platform-as-a-product + measure-outcomes-not-output + every capability maps to a
+  plane and an implementer skill + read-only analysis / human-gated decisions).
 - `../../platform-engineering/vercel/SKILL.md` — the contract the Vercel team
   reads first and enforces (CORE PRINCIPLES + production-is-a-promotion +
   rollback-re-points-not-rebuilds + domain-card-is-DNS-source-of-truth +
