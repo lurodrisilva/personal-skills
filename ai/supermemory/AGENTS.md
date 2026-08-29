@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-08-28 -->
+<!-- Generated: 2026-08-28 | Updated: 2026-08-29 -->
 
 # ai/supermemory
 
@@ -22,7 +22,7 @@ self-hosted single binary (`npx supermemory local`, port 6767). Five phases
 ## Subdirectories
 | Directory | Purpose |
 |-----------|---------|
-| `tools/` | 3 strictly read-only scripts: `supermemory-api-probe.sh` (reachability/auth/org snapshot), `supermemory-search-probe.sh` (one end-to-end `/v4/search` query with timing/similarity), `supermemory-config-audit.sh` (local project wiring: deps, env vars, hardcoded-key warning, MCP entries, self-hosted state) |
+| `tools/` | 3 strictly read-only scripts: `supermemory-api-probe.sh` (reachability/auth/org snapshot), `supermemory-search-probe.sh` (one end-to-end `/v4/search` query with timing/similarity), `supermemory-config-audit.sh` (local project wiring: deps, env vars, hardcoded-key warning, MCP entries, self-hosted state) (see `tools/AGENTS.md`) |
 
 ## For AI Agents
 
