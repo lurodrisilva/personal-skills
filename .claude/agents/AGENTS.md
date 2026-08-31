@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-06-28 | Updated: 2026-08-29 -->
+<!-- Generated: 2026-06-28 | Updated: 2026-08-31 -->
 
 # agents
 
@@ -31,6 +31,7 @@ skill's "Subagent Orchestration" table:
 - **Vercel-Git-CICD team** → `platform-engineering/vercel-git-cicd/SKILL.md`
 - **Hermes-Agent team** → `ai/hermes-agent/SKILL.md`
 - **Supermemory team** → `ai/supermemory/SKILL.md`
+- **Kapso-WhatsApp team** → `ai/kapso-whatsapp/SKILL.md`
 
 ## Key Files
 | File | Team | Description |
@@ -150,6 +151,11 @@ skill's "Subagent Orchestration" table:
 | `supermemory-sdk-integrator.md` | supermemory | Phase C — TS/Python SDKs, `@supermemory/tools` v2 (`/ai-sdk` `/openai` `/mastra` `/claude-memory`, required `customId`), Python agent-framework patterns, MS Agent Framework, v2 migration; owns `supermemory-config-audit.sh` |
 | `supermemory-platform-operator.md` | supermemory | Phase D — Memory MCP (OAuth, 7 tools) + Docs MCP + `claude-supermemory` plugin, self-hosted `supermemory local` (:6767), scoped API keys, billing meters + 402 triage; owns `supermemory-api-probe.sh` |
 | `supermemory-agentic-architect.md` | supermemory | Phase E — memory architecture for agents: tag schemes, automatic-vs-tool-based injection, write policy, read-your-writes barriers, latency budgets, hygiene cadence, Mem0/Zep migration (model=opus) |
+| `kapso-messaging-engineer.md` | kapso | Phase A — Meta-mirror sends (all message types) + `@kapso/whatsapp-cloud-api` SDK modes, 24-hour window, template lifecycle/sync/opt-outs, media, BSUID sends, business profile/usernames/calls |
+| `kapso-onboarding-operator.md` | kapso | Phase B — number connection paths (instant setup/BYO SIM/coexistence/Twilio/manual), customers + setup links (`meta_billing_mode` immutable), Tech Provider, phone health, sandbox limits; owns `kapso-api-probe.sh` |
+| `kapso-webhook-engineer.md` | kapso | Phase C — webhook scopes/kinds, raw-body HMAC + timing-safe verify, 10s ack + 10/40/90s retries + 85% auto-pause, buffering batch envelope, ordering, origin filter, event catalog, v1→v2; owns `kapso-webhook-audit.sh` |
+| `kapso-workflow-automation-engineer.md` | kapso | Phase D — canvas + local workflow dev (`kapso pull/build/push`, `@kapso/workflows`), lock_version replacement sets, start/resume API + burst limits, Cloudflare-Worker functions, project events + findings; owns `kapso-workflow-inventory.sh` |
+| `kapso-agent-integrator.md` | kapso | Phase E — Project MCP (action-grouped tools, gated mutations) + Docs MCP, CLI-for-agents, Chat SDK/OpenClaw/Hermes/n8n runtimes, Kapso Agent runs API + approvals |
 
 ## Subdirectories
 None.
@@ -199,7 +205,9 @@ None.
   automation-gateway-engineer | provider-integrator} → extension-developer for
   code-level work; supermemory: agentic-architect designs first →
   ingestion-engineer → retrieval-engineer → {sdk-integrator |
-  platform-operator} implement).
+  platform-operator} implement; kapso: onboarding-operator connects the
+  number → messaging-engineer sends → webhook-engineer receives →
+  {workflow-automation-engineer | agent-integrator} automate).
 - These agents are **repo-scoped** (see `../AGENTS.md`). If you add an agent, also
   add it to the owning skill's Subagent Orchestration table and that skill dir's
   `AGENTS.md` "Companion Subagents" section; if you rename one, update both sides.
@@ -286,6 +294,11 @@ None.
   three-artifact model + customId dedupe/diff-billing + async-dreaming
   read-your-writes + soft forgetting with dryRun-first + scoped keys +
   read-only inspection / gated, human-approved actions).
+- `../../ai/kapso-whatsapp/SKILL.md` — the contract the Kapso-WhatsApp team
+  reads first and enforces (CORE PRINCIPLES + three-APIs-one-key + the
+  24-hour window + BSUID-safe parsing + raw-body HMAC verification +
+  lock-versioned replacement-set workflow definitions + agent
+  blast-radius + read-only inspection / gated, human-approved actions).
 
 ### External
 - Claude Code subagent runtime (loads `tools` / `model` from frontmatter).
