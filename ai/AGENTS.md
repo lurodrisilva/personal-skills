@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-06-03 | Updated: 2026-08-28 | DEEPINIT: 2026-06-03 -->
+<!-- Generated: 2026-06-03 | Updated: 2026-08-31 | DEEPINIT: 2026-06-03 -->
 
 # ai
 
@@ -14,6 +14,7 @@ None at this level — all content lives in subdirectories.
 |-----------|---------|
 | `graphify/` | Graphify codebase knowledge-graph CLI/MCP — `graphifyy` package, `/graphify` slash command, NetworkX `graph.json`, tree-sitter + LLM extraction, MCP serve, PR impact (see `graphify/AGENTS.md`) |
 | `hermes-agent/` | Hermes Agent (Nous Research) autonomous agent framework — script-only install, `~/.hermes` config contract, profiles/distributions, skills + memory + SOUL.md, cron/hooks/gateway, providers + MCP client/server, iron-proxy egress; ships 3 read-only `tools/` scripts + 6 companion subagents in `.claude/agents/` (see `hermes-agent/AGENTS.md`) |
+| `kapso-whatsapp/` | Kapso (kapso.ai) WhatsApp platform for developers and AI agents — three APIs behind one key (WhatsApp Meta-mirror `v24.0`, Platform, Workflows), `@kapso/whatsapp-cloud-api` SDK + `@kapso/cli`, webhooks (HMAC/buffering/auto-pause), workflows + Cloudflare-Worker functions, customer onboarding setup links, Project MCP + Docs MCP + agent runtimes (Chat SDK/OpenClaw/Hermes/n8n); ships 3 read-only `tools/` scripts + 5 companion subagents in `.claude/agents/` (see `kapso-whatsapp/AGENTS.md`) |
 | `supermemory/` | Supermemory (supermemory.ai) memory/context API for agentic workflows — v3/v4 REST (documents/conversations/search/memories/profiles/container-tags/connections/settings), TS + Python SDKs, `@supermemory/tools` v2 framework wrappers, Memory MCP + Docs MCP + Claude Code plugin, self-hosted single binary on :6767; ships 3 read-only `tools/` scripts + 5 companion subagents in `.claude/agents/` (see `supermemory/AGENTS.md`) |
 
 ## For AI Agents
