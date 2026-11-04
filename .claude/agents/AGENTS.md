@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-06-28 | Updated: 2026-08-31 -->
+<!-- Generated: 2026-06-28 | Updated: 2026-11-04 -->
 
 # agents
 
@@ -32,6 +32,7 @@ skill's "Subagent Orchestration" table:
 - **Hermes-Agent team** → `ai/hermes-agent/SKILL.md`
 - **Supermemory team** → `ai/supermemory/SKILL.md`
 - **Kapso-WhatsApp team** → `ai/kapso-whatsapp/SKILL.md`
+- **CNAB-444 team** → `file-exchange/cnab-444/SKILL.md`
 
 ## Key Files
 | File | Team | Description |
@@ -156,6 +157,9 @@ skill's "Subagent Orchestration" table:
 | `kapso-webhook-engineer.md` | kapso | Phase C — webhook scopes/kinds, raw-body HMAC + timing-safe verify, 10s ack + 10/40/90s retries + 85% auto-pause, buffering batch envelope, ordering, origin filter, event catalog, v1→v2; owns `kapso-webhook-audit.sh` |
 | `kapso-workflow-automation-engineer.md` | kapso | Phase D — canvas + local workflow dev (`kapso pull/build/push`, `@kapso/workflows`), lock_version replacement sets, start/resume API + burst limits, Cloudflare-Worker functions, project events + findings; owns `kapso-workflow-inventory.sh` |
 | `kapso-agent-integrator.md` | kapso | Phase E — Project MCP (action-grouped tools, gated mutations) + Docs MCP, CLI-for-agents, Chat SDK/OpenClaw/Hermes/n8n runtimes, Kapso Agent runs API + approvals |
+| `cnab-444-remessa-generator.md` | cnab-444 | Phases A–B — map títulos (ERP/planilha/JSON) to layout fields, ocorrência/espécie/coobrigação/termo de cessão choice, JSON spec, `cnab444.py generate`, `CBDDMM…` naming; never uploads |
+| `cnab-444-file-auditor.md` | cnab-444 | Phase C — `cnab444.py validate`/`inspect`, rejection triage, JSON diffs of remessas, selftest + local round-trip of real files; never patches bytes |
+| `cnab-444-instructions-operator.md` | cnab-444 | Phase D — prorrogação (20, one file per cedente), liquidação parcial/baixas/recompra/abatimento/cancelamento, operating windows and approvals; never submits |
 
 ## Subdirectories
 None.
@@ -207,7 +211,9 @@ None.
   ingestion-engineer → retrieval-engineer → {sdk-integrator |
   platform-operator} implement; kapso: onboarding-operator connects the
   number → messaging-engineer sends → webhook-engineer receives →
-  {workflow-automation-engineer | agent-integrator} automate).
+  {workflow-automation-engineer | agent-integrator} automate; cnab-444:
+  remessa-generator builds acquisitions and instructions-operator builds
+  post-cessão instructions → file-auditor validates both independently).
 - These agents are **repo-scoped** (see `../AGENTS.md`). If you add an agent, also
   add it to the owning skill's Subagent Orchestration table and that skill dir's
   `AGENTS.md` "Companion Subagents" section; if you rename one, update both sides.
@@ -299,6 +305,10 @@ None.
   24-hour window + BSUID-safe parsing + raw-body HMAC verification +
   lock-versioned replacement-set workflow definitions + agent
   blast-radius + read-only inspection / gated, human-approved actions).
+- `../../file-exchange/cnab-444/SKILL.md` — the contract the CNAB-444 team
+  reads first and enforces (CORE PRINCIPLES + one layout table +
+  generate→validate→name + refuse-never-truncate + ASCII/444/CRLF +
+  synthetic-data-only + generation is not submission).
 
 ### External
 - Claude Code subagent runtime (loads `tools` / `model` from frontmatter).

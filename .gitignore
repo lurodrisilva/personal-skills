@@ -1,2 +1,4 @@
 .omc/
 .serena/
+__pycache__/
+*.pyc

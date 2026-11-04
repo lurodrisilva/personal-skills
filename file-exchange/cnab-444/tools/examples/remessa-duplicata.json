@@ -1,0 +1,49 @@
+{
+  "header": {
+    "codigo_originador": "00000000000000000123",
+    "nome_originador": "ORIGINADORA EXEMPLO",
+    "data_gravacao": "2026-10-15",
+    "seq_arquivo": "1000001"
+  },
+  "defaults": {
+    "coobrigacao": "01",
+    "ocorrencia": "01",
+    "especie": "01",
+    "tipo_pessoa_cedente": "02",
+    "termo_cessao": "1000001",
+    "tipo_inscricao_sacado": "02",
+    "serie_nf": "1",
+    "nome_cedente": "CEDENTE EXEMPLO INDUSTRIA LTDA",
+    "cnpj_cedente": "11222333000181"
+  },
+  "titulos": [
+    {
+      "seu_numero": "EX0001",
+      "numero_documento": "1234-01",
+      "vencimento": "2026-11-14",
+      "valor_face": "2470.56",
+      "valor_presente": "2401.10",
+      "data_emissao": "2026-10-15",
+      "inscricao_sacado": "44455566000183",
+      "nome_sacado": "Sacado Exemplo Comércio S.A.",
+      "endereco_sacado": "Rua das Flores, 100",
+      "cep_sacado": "01001000",
+      "numero_nf": "1234",
+      "chave_nfe": "35261011222333000181550010000012341000012341"
+    },
+    {
+      "seu_numero": "EX0002",
+      "numero_documento": "1235-01",
+      "vencimento": "2026-12-14",
+      "valor_face": "10000.00",
+      "valor_presente": "9650.00",
+      "data_emissao": "2026-10-15",
+      "inscricao_sacado": "77788899000183",
+      "nome_sacado": "DISTRIBUIDORA ACME LTDA",
+      "endereco_sacado": "Av. Brasil, 2000 - Sala 3",
+      "cep_sacado": "20040002",
+      "numero_nf": "1235",
+      "chave_nfe": "35261011222333000181550010000012351000012349"
+    }
+  ]
+}
