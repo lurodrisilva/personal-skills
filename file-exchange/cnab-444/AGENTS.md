@@ -1,5 +1,5 @@
    1 <!-- Parent: ../AGENTS.md -->
-   2 <!-- Generated: 2026-11-04 -->
+   2 <!-- Generated: 2026-11-04 | DEEPINIT: 2026-11-04 -->
    3 
    4 # cnab-444
    5 
