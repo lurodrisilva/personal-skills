@@ -1,5 +1,5 @@
    1 <!-- Parent: ../AGENTS.md -->
-   2 <!-- Generated: 2026-11-04 -->
+   2 <!-- Generated: 2026-11-04 | Updated: 2026-11-04 | DEEPINIT: 2026-11-04 -->
    3 
    4 # tools
    5 
@@ -12,10 +12,11 @@
   12 ## Key Files
   13 | File | Surfaces |
   14 |------|----------|
-  15 | `cnab444.py` | Layout tables `HEADER`/`DETAIL`/`TRAILER` (import-time tiling assertion 1..444) + CLI: `generate SPEC.json [--outdir/-o/--dry-run/--style observed\|manual/--ext REM\|TXT/--force]` (self-validates, refuses on ERROR, refuses to overwrite without `--force`), `validate FILE... [--json/-q]` (exit 1 on ERROR), `inspect FILE [--summary]` (spec JSON; round-trips byte-identically), `filename --date --seq/--suffix`, `layout [--record/--json]` |
-  16 | `cnab444_mcp_server.py` | MCP stdio server (newline-delimited JSON-RPC 2.0, protocol-only stdout): `cnab444_layout`, `cnab444_codes`, `cnab444_filename`, `cnab444_inspect`, `cnab444_validate`, `cnab444_generate` (writes only with `output_dir`, never overwrites) |
-  17 | `cnab444-selftest.sh` | Offline suite: tiling, example generation + byte-identity, CRLF/ASCII/accents, round-trip, 11 generator refusals, 5 validator corruption catches, filename styles, MCP protocol smoke test. Extra args = real `.REM` files to round-trip locally. Exit code = failures |
-  18 | `examples/remessa-duplicata.json` | Synthetic spec (fake CNPJs with valid DVs, valid-DV NF-e keys) |
+  15 | `cnab444.py` | Layout tables `HEADER`/`DETAIL`/`TRAILER` (import-time tiling assertion 1..444) + CLI: `generate SPEC.json [--outdir/-o/--dry-run/--style observed\|manual/--ext REM\|TXT/--force]` (self-validates, refuses on ERROR, refuses to overwrite without `--force`), `validate FILE... [--json/-q]` (exit 1 on ERROR), `inspect FILE [--summary]` (spec JSON; valid files round-trip byte-identically), `filename --date --seq/--suffix`, `layout [--record/--json]` |
+  16 | `cnab444_mcp_server.py` | MCP stdio server (newline-delimited JSON-RPC 2.0, protocol-only stdout): `cnab444_layout`, `cnab444_codes`, `cnab444_filename`, `cnab444_inspect`, `cnab444_validate`, `cnab444_generate` (writes only into an existing `output_dir`, exclusive-create — never overwrites or follows a symlink). Reads only `.REM`/`.TXT` regular files ≤50 MB, optionally confined to `CNAB444_ROOT` |
+  17 | `cnab444-selftest.sh` | Offline suite: tiling, example generation + byte-identity, CRLF/ASCII/accents, round-trip, 11 generator refusals, 5 validator corruption catches, filename styles, MCP protocol smoke test, MCP path hardening. Extra args = real `.REM` files: valid ones must round-trip, invalid ones must be refused (never repaired). Exit code = failures |
+  18 | `examples/` | Synthetic fixtures (see `examples/AGENTS.md`) |
+| `examples/remessa-duplicata.json` | Synthetic spec (fake CNPJs with valid DVs, valid-DV NF-e keys) |
   19 | `examples/CB15100001.REM` | Its generated output — the selftest asserts byte-identity |
   20 
   21 ## For AI Agents
