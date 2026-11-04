@@ -30,6 +30,8 @@ security/                # security / hardening / threat-model skills
   <skill-name>/SKILL.md  # may also ship read-only audit scripts under tools/
 networking/              # networking-plane / CNI / dataplane skills
   <skill-name>/SKILL.md
+file-exchange/           # file-format / interchange-layout skills (e.g. cnab-444)
+  <skill-name>/SKILL.md  # may ship generators/validators + an MCP server under tools/
 scripts/validate-skills.sh
 .github/workflows/validate-skills.yml
 ```
@@ -61,7 +63,7 @@ Conventions observed across the existing skills (keep them when adding new ones)
 
 ## Validator coverage
 
-`scripts/validate-skills.sh` walks every domain in the `DOMAIN_DIRS` array — currently `coding/`, `platform-engineering/`, `operations/`, `security/`, and `networking/`. Add new top-level domain directories to that array as the repo grows. The orphan-directory check accepts an exception: a directory that has no `SKILL.md` but contains one or more `*-expertise.md` / `*-workflow.md` files is treated as a learner-style knowledge directory rather than a malformed skill.
+`scripts/validate-skills.sh` walks every domain in the `DOMAIN_DIRS` array — currently `coding/`, `platform-engineering/`, `operations/`, `security/`, `networking/`, and `file-exchange/`. Add new top-level domain directories to that array as the repo grows. The orphan-directory check accepts an exception: a directory that has no `SKILL.md` but contains one or more `*-expertise.md` / `*-workflow.md` files is treated as a learner-style knowledge directory rather than a malformed skill.
 
 ## Conventions
 
