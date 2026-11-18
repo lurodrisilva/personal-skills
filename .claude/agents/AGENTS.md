@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-06-28 | Updated: 2026-11-04 | DEEPINIT: 2026-11-04 -->
+<!-- Generated: 2026-06-28 | Updated: 2026-11-18 | DEEPINIT: 2026-11-04 -->
 
 # agents
 
@@ -33,6 +33,7 @@ skill's "Subagent Orchestration" table:
 - **Supermemory team** → `ai/supermemory/SKILL.md`
 - **Kapso-WhatsApp team** → `ai/kapso-whatsapp/SKILL.md`
 - **CNAB-444 team** → `file-exchange/cnab-444/SKILL.md`
+- **1Password team** → `security/1password/SKILL.md`
 
 ## Key Files
 | File | Team | Description |
@@ -160,6 +161,11 @@ skill's "Subagent Orchestration" table:
 | `cnab-444-remessa-generator.md` | cnab-444 | Phases A–B — map títulos (ERP/planilha/JSON) to layout fields, ocorrência/espécie/coobrigação/termo de cessão choice, JSON spec, `cnab444.py generate`, `CBDDMM…` naming; never uploads |
 | `cnab-444-file-auditor.md` | cnab-444 | Phase C — `cnab444.py validate`/`inspect`, rejection triage, JSON diffs of remessas, selftest + local round-trip of real files; never patches bytes |
 | `cnab-444-instructions-operator.md` | cnab-444 | Phase D — prorrogação (20, one file per cedente), liquidação parcial/baixas/recompra/abatimento/cancelamento, operating windows and approvals; never submits |
+| `1password-setup-doctor.md` | 1password | Phases A–B — `op` baseline and auth mode, desktop-app integration, Developer Tools plugin, `1password-mcp` + `1password-guard` + docs MCP, validation hook, shell plugins; owns `op-doctor.sh` / `op-selftest.sh` |
+| `1password-secrets-broker.md` | 1password | Phase C — `op://` references, `op run` / `op inject`, value-free discovery and resolution checks through the guard MCP server; never prints, reads back or stores a value |
+| `1password-env-migrator.md` | 1password | Phase D — plaintext inventory (`op_guard.py scan-*`), Environments, mounted `.env`, MCP config `op run` rewrite, leftovers and the rotation list |
+| `1password-ssh-git.md` | 1password | Phase E — 1Password SSH agent, `agent.toml`, six-key limit and host pinning, commit signing via `op-ssh-sign`; owns `op-ssh-audit.sh`; public material only |
+| `1password-automation-identity.md` | 1password | Phase F — service account vs Connect vs Credential Broker, scope/expiry/rate limits, CI/CD, Kubernetes and SDK delivery; never creates or rotates an identity itself |
 
 ## Subdirectories
 None.
@@ -213,7 +219,10 @@ None.
   number → messaging-engineer sends → webhook-engineer receives →
   {workflow-automation-engineer | agent-integrator} automate; cnab-444:
   remessa-generator builds acquisitions and instructions-operator builds
-  post-cessão instructions → file-auditor validates both independently).
+  post-cessão instructions → file-auditor validates both independently;
+  1password: setup-doctor proves the machine is wired → env-migrator gets
+  plaintext off disk → secrets-broker runs commands through `op run`, with
+  ssh-git and automation-identity independent of that chain).
 - These agents are **repo-scoped** (see `../AGENTS.md`). If you add an agent, also
   add it to the owning skill's Subagent Orchestration table and that skill dir's
   `AGENTS.md` "Companion Subagents" section; if you rename one, update both sides.
@@ -309,6 +318,11 @@ None.
   reads first and enforces (CORE PRINCIPLES + one layout table +
   generate→validate→name + refuse-never-truncate + ASCII/444/CRLF +
   synthetic-data-only + generation is not submission).
+- `../../security/1password/SKILL.md` — the contract the 1Password team
+  reads first and enforces (CORE PRINCIPLES + the model never sees a value +
+  reference-don't-copy + verify by resolution, not display + human approval
+  per session + least-privilege unattended identity + migration ends with
+  rotation + read-only inspection / gated, human-approved actions).
 
 ### External
 - Claude Code subagent runtime (loads `tools` / `model` from frontmatter).

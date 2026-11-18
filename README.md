@@ -1,7 +1,7 @@
 # personal-skills
 
 [![Validate Skills](https://github.com/lurodrisilva/personal-skills/actions/workflows/validate-skills.yml/badge.svg)](https://github.com/lurodrisilva/personal-skills/actions/workflows/validate-skills.yml)
-[![Skills](https://img.shields.io/badge/skills-42-blue)](#available-skills)
+[![Skills](https://img.shields.io/badge/skills-43-blue)](#available-skills)
 
 A collection of **Claude Code skills** -- comprehensive reference guides that Claude Code loads when working on projects matching specific technology patterns. Each skill encodes architectural rules, coding conventions, and framework-specific guidance for a technology stack.
 
@@ -71,6 +71,7 @@ A collection of **Claude Code skills** -- comprehensive reference guides that Cl
 | Skill | Platform | Focus | Key Technologies |
 |-------|----------|-------|------------------|
 | [kubernetes-security](security/kubernetes-security/SKILL.md) | Kubernetes (any distro) | **Securing / hardening** Kubernetes (the security discipline) — threat model & the 4Cs, cluster/kubelet/etcd hardening, secrets, least-privilege RBAC & identity, workload hardening, supply-chain & admission policy, zero-trust microsegmentation, runtime threat detection. Owns *why controls exist / how they fail*; complements `kubernetes-operations` (operate) and `github-actions` (CI supply chain). Ships read-only audit scripts under `tools/` and 5 companion subagents in `.claude/agents/` | 4Cs threat model, etcd `EncryptionConfiguration` + KMS, kube-bench / CIS Benchmark, `securityContext` + Pod Security Admission, RBAC (`escalate`/`bind`/`impersonate`), Trivy / SBOM, Sigstore Cosign + SLSA, ValidatingAdmissionPolicy / OPA Gatekeeper / Kyverno, default-deny `NetworkPolicy` + Calico / Cilium + mTLS, Falco / Tetragon (eBPF), External Secrets Operator / Vault, CNAPP |
+| [1password](security/1password/SKILL.md) | 1Password (CLI, desktop app, Environments) | **Secrets manager for local Claude Code / coding-agent sessions** — the model names secrets and never sees a value: secret references, `op run` / `op inject`, Environments and locally mounted `.env` files, plaintext `.env` / `mcp.json` migration with rotation, the Developer Tools plugin and Environments MCP server, SSH agent + Git commit signing, and service accounts / Connect / Credential Broker for unattended work. Ships a value-free MCP server (`1password-guard`), read-only audit scripts and an offline self-test under `tools/`, and 5 companion subagents in `.claude/agents/` | 1Password CLI (`op`), secret references (`op://`), `op run` / `op inject`, 1Password Environments, mounted `.env` (named pipe), `1password-mcp`, shell plugins, 1Password SSH agent + `op-ssh-sign`, service accounts, Connect, Credential Broker (OIDC), SDKs (Go / JS / Python), MCP stdio |
 
 ### Networking
 
@@ -140,7 +141,7 @@ Skills are organized by domain:
 - `coding/` -- application-development skills (language, framework, or build-tooling guidance)
 - `platform-engineering/` -- infrastructure / DevOps / CI-CD / supply-chain skills
 - `operations/` -- Day-2 / SRE skills for **running** systems (e.g. `kubernetes-operations`)
-- `security/` -- security / hardening / threat-model skills (e.g. `kubernetes-security`; may ship read-only audit scripts under `tools/`)
+- `security/` -- security / hardening / threat-model skills (e.g. `kubernetes-security`, `1password`; may ship read-only audit scripts or an MCP server under `tools/`)
 - `networking/` -- networking-plane / CNI / dataplane / network-policy-mechanics skills (e.g. `kubernetes-networking`)
 - `file-exchange/` -- file-format / interchange-layout skills that generate and validate files exchanged with counterparties (e.g. `cnab-444`)
 

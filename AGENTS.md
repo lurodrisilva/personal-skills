@@ -20,7 +20,7 @@ Distribution repository for **Claude Code / opencode skills**. Each leaf directo
 | `coding/` | Application-development skills — language, framework, build-tooling guidance (see `coding/AGENTS.md`) |
 | `platform-engineering/` | Infrastructure, DevOps, CI/CD, supply-chain, observability skills (see `platform-engineering/AGENTS.md`) |
 | `operations/` | Day-2 / SRE skills for **operating** running systems — e.g. `kubernetes-operations` (see `operations/AGENTS.md`) |
-| `security/` | Security / hardening / threat-model skills — e.g. `kubernetes-security` (ships read-only audit scripts under `tools/`) (see `security/AGENTS.md`) |
+| `security/` | Security / hardening / threat-model skills — e.g. `kubernetes-security` (ships read-only audit scripts under `tools/`) and `1password` (ships a value-free `op` wrapper + MCP server under `tools/`) (see `security/AGENTS.md`) |
 | `networking/` | Networking-plane skills — the CNI / dataplane / routing / network-policy mechanics, e.g. `kubernetes-networking` (Calico) (see `networking/AGENTS.md`) |
 | `file-exchange/` | File-format / interchange-layout skills — generate and validate files exchanged with banks, custodians and counterparties, e.g. `cnab-444` (ships a stdlib Python generator/validator + MCP stdio server under `tools/`) (see `file-exchange/AGENTS.md`) |
 | `scripts/` | Local + CI validation tooling for SKILL.md (see `scripts/AGENTS.md`) |

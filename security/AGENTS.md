@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-06-29 | Updated: 2026-06-29 | DEEPINIT: 2026-06-29 -->
+<!-- Generated: 2026-06-29 | Updated: 2026-11-18 | DEEPINIT: 2026-06-29 -->
 
 # security
 
@@ -21,6 +21,7 @@ None at this level — all content lives in subdirectories.
 | Directory | Purpose |
 |-----------|---------|
 | `kubernetes-security/` | Securing/hardening Kubernetes — 4Cs threat model, cluster/etcd/kubelet hardening, secrets, least-privilege RBAC, workload hardening (PSA/securityContext), supply-chain & admission policy, zero-trust microsegmentation, runtime threat detection; ships read-only `tools/` audit scripts + a 5-agent security team in `../.claude/agents/` (see `kubernetes-security/AGENTS.md`) |
+| `1password/` | 1Password as the secrets manager for local Claude Code / coding-agent sessions — the model never sees a value: `op://` references, `op run` / `op inject`, Environments + mounted `.env`, plugin and MCP wiring, SSH agent + commit signing, service accounts / Connect / Credential Broker; ships value-free `tools/` (a stdlib `op` wrapper, the `1password-guard` MCP server, audit scripts, offline self-test) + a 5-agent team in `../.claude/agents/` (see `1password/AGENTS.md`) |
 
 ## For AI Agents
 
@@ -65,7 +66,7 @@ None at this level — all content lives in subdirectories.
 ### Internal
 - `../scripts/validate-skills.sh` — validates this tree (its `DOMAIN_DIRS` includes `security/`); CI runs it on every push and PR. **A missing domain dir is itself a validator error**, so this directory must always contain at least one valid skill.
 - `../README.md` — references each skill in the "Security" table; rename → README update required.
-- `../.claude/agents/` — the companion `k8s-*` security subagent team (`k8s-cluster-hardener`, `k8s-rbac-iam-auditor`, `k8s-supplychain-admission`, `k8s-network-zerotrust`, `k8s-runtime-threat`).
+- `../.claude/agents/` — the companion `k8s-*` security subagent team (`k8s-cluster-hardener`, `k8s-rbac-iam-auditor`, `k8s-supplychain-admission`, `k8s-network-zerotrust`, `k8s-runtime-threat`), and the `1password-*` team (`1password-setup-doctor`, `1password-secrets-broker`, `1password-env-migrator`, `1password-ssh-git`, `1password-automation-identity`).
 - `../operations/kubernetes-operations/` & `../platform-engineering/kubernetes-operator-golang/` — the operate/build counterparts this domain cross-references to keep boundaries sharp.
 
 <!-- MANUAL: -->
