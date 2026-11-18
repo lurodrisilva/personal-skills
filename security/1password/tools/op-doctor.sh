@@ -12,8 +12,10 @@
 # It deliberately prints NO secret and NO token: token variables are reported as
 # present/absent, never by value. It never runs `op signin`, `op read`, `op item get`,
 # `op run`, `op inject`, and never creates, edits or deletes anything. With the desktop
-# app integration on, `op whoami` does not raise a prompt; `op vault list` (opt-in with
-# --vaults) may raise one.
+# app integration on, `op whoami` reports "account is not signed in" until a command has
+# been authorized in this terminal session, so when it fails and accounts are known the
+# script falls back to `op vault list` as the probe; that call may raise one authorization
+# prompt in the app. Vault names are printed only with --vaults.
 #
 # Review this script before running. Signing in, turning on the app integration,
 # installing a plugin or registering an MCP server is a separate, deliberate action.
@@ -61,6 +63,10 @@ echo "== Current identity (op whoami) =="
 AUTH_OK=0
 if WHO="$(op whoami 2>&1)"; then
   echo "${WHO}" | sed 's/^/  /'
+  AUTH_OK=1
+elif [[ -n "${ACCOUNTS}" ]] && op vault list --format json >/dev/null 2>&1; then
+  echo "  op whoami: $(echo "${WHO}" | tail -1)"
+  echo "  op vault list succeeded: desktop-app integration is authorizing this session"
   AUTH_OK=1
 else
   echo "  not signed in: $(echo "${WHO}" | tail -1)"

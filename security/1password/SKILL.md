@@ -110,8 +110,10 @@ Exit `2` = `op` missing, `4` = installed but not authenticated. Then, to get to 
    **Settings → Developer → Integrate with 1Password CLI** (enable Touch ID under
    **Settings → Security** first); Linux needs **Settings → Security → Unlock using system
    authentication** before the Developer toggle.
-3. **Prove it**: `op vault list` raises the biometric prompt and lists vaults. `op whoami` then
-   shows the account. No `op signin`, no `eval $(op signin)`, no session token in the shell.
+3. **Prove it**: `op vault list` raises the biometric prompt and lists vaults. `op whoami` only
+   shows the account within a terminal session that already authorized a command; in a fresh one
+   (every agent Bash call) it says `account is not signed in` while the integration works, so probe
+   with `op vault list`, not `op whoami`. No `op signin`, no `eval $(op signin)`, no session token in the shell.
 
 The integration, the plugin install and the MCP toggle are **the user's** actions — ask, do not
 perform them silently. Checks are idempotent; re-run the doctor after each step.
@@ -133,7 +135,10 @@ Then in the desktop app: **Settings → Developer → Integrate with MCP clients
 (`onepassword://settings/developers`). Business accounts also need the admin policy
 **Policies → Agentic permissions → Local MCP server**. Verify with `/mcp`.
 
-**B2. Environments MCP server by hand** (any MCP client; the binary ships with the desktop app):
+**B2. Environments MCP server by hand** (any MCP client; the binary ships with the desktop app at
+`/Applications/1Password.app/Contents/MacOS/1password-mcp`, and turning on **Integrate with MCP clients**
+links it as `/usr/local/bin/1password-mcp`; until that toggle is on, the plugin's `"command": "1password-mcp"`
+fails with `Executable not found in $PATH`):
 
 ```json
 { "mcpServers": { "1password": { "command": "1password-mcp" } } }
@@ -318,7 +323,7 @@ bash security/1password/tools/op-ssh-audit.sh   # socket, routing, agent.toml, o
 
 ## Checklist
 
-- [ ] `op-doctor.sh` exits `0`; `op whoami` works through the desktop app, with no session token exported
+- [ ] `op-doctor.sh` exits `0`; `op vault list` works through the desktop app, with no session token exported
 - [ ] No `OP_SERVICE_ACCOUNT_TOKEN` in shell profiles on a workstation
 - [ ] `op_guard.py scan-tree .` exits `0` for the project
 - [ ] Every MCP server that needs a credential is launched through `op run`
